@@ -153,7 +153,7 @@ class StringView {
 
     if (i >= size_) return 0;  // 只有符号，没有数字
 
-    int result = 0;
+    long long result = 0;
     for (; i < size_; ++i) {
       char ch = data_[i];
       if (ch < '0' || ch > '9') return 0;  // 非数字 → 格式错误
@@ -172,7 +172,7 @@ class StringView {
       result = result * 10 + digit;
     }
 
-    return negative ? -result : result;
+    return negative ? static_cast<int>(-result) : static_cast<int>(result);
   }
 
   // 使用 FNV-1a 计算字符串内容的哈希值。
