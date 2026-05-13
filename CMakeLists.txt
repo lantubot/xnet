@@ -122,16 +122,43 @@ endif()
 
 # ── Lint (clang-format) ──────────────────────────────────────────────
 if(XNET_BUILD_LINT)
-    # 使用 lint.sh 脚本进行代码格式检查（Google C++ 规范）
-    add_custom_target(xnet_lint
-        COMMAND ${CMAKE_SOURCE_DIR}/lint.sh check
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        COMMENT "检查代码格式是否符合 Google C++ 规范"
+    # 跨平台查找 clang-format（Linux: clang-format-18/17/16, Win: clang-format.exe）
+    find_program(CLANG_FORMAT
+        NAMES clang-format-18 clang-format-17 clang-format-16
+              clang-format-15 clang-format-14 clang-format
     )
+    if(NOT CLANG_FORMAT)
+        message(WARNING "clang-format not found — xnet_lint / xnet_format targets disabled.
+            Install it via: sudo apt install clang-format-18 (Linux)
+            or: choco install llvm (Windows)")
+    else()
+        # 收集所有需要检查的源文件和头文件
+        file(GLOB_RECURSE XNET_LINT_SOURCES
+            "${CMAKE_SOURCE_DIR}/src/*.cc"
+            "${CMAKE_SOURCE_DIR}/include/xnet/*.h"
+            "${CMAKE_SOURCE_DIR}/ports/*.cc"
+            "${CMAKE_SOURCE_DIR}/ports/*.h"
+            "${CMAKE_SOURCE_DIR}/tests/*.cc"
+            "${CMAKE_SOURCE_DIR}/tests/*.h"
+            "${CMAKE_SOURCE_DIR}/examples/*.cc"
+        )
+        list(SORT XNET_LINT_SOURCES)
 
-    add_custom_target(xnet_format
-        COMMAND ${CMAKE_SOURCE_DIR}/lint.sh fix
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        COMMENT "自动修复代码格式为 Google C++ 规范"
-    )
+        # xnet_lint — 检查代码格式（Google C++ 规范）
+        add_custom_target(xnet_lint
+            COMMAND ${CMAKE_COMMAND} -E echo_append "Lint: "
+            COMMAND ${CLANG_FORMAT} --dry-run -Werror -style=file ${XNET_LINT_SOURCES}
+            COMMAND ${CMAKE_COMMAND} -E echo "PASS"
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            COMMENT "检查代码格式是否符合 Google C++ 规范"
+        )
+
+        # xnet_format — 自动修复代码格式
+        add_custom_target(xnet_format
+            COMMAND ${CLANG_FORMAT} -i -style=file ${XNET_LINT_SOURCES}
+            COMMAND ${CMAKE_COMMAND} -E echo "格式化完成!"
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            COMMENT "自动修复代码格式为 Google C++ 规范"
+        )
+    endif()
 endif()
