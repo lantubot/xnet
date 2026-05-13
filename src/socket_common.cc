@@ -18,23 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// SocketFactory 平台无关方法的实现。
-//
-// SocketFactory::create() 是平台相关的，位于 ports/ 目录下。
-// SocketFactory::destroy() 是所有平台通用的实现，放在这里。
-
-#include "xnet/socket.h"  // Socket, SocketFactory
+#include "xnet/socket.h"
 
 namespace xnet {
 
-// static
 void SocketFactory::destroy(Socket* s) {
-  if (s == nullptr) {
-    return;
-  }
-  // 释放前先关闭套接字。根据 Socket 接口约定，close() 保证是幂等的，
-  // 因此即使套接字已在外部被关闭，在此处调用也是安全的。
-  (void)s->close();
+  if (s == nullptr) return;
+  XNET_UNUSED(s->close());
   delete s;
 }
 

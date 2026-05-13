@@ -18,8 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
-
 #ifndef XNET_REQUEST_H_
 #define XNET_REQUEST_H_
 
@@ -36,12 +34,8 @@
 
 namespace xnet {
 
-// ============================================================================
-// Response — 存储一次完成的 HTTP 请求的结果。
-//
-// 拥有一个 Buffer，它同时作为解析后的头部存储和响应体的后备存储。
-// 提供状态码、响应体内容和头部查找的高级访问器。
-// ============================================================================
+// Response — HTTP 请求结果。
+// 拥有 Buffer 作为头部存储和响应体后备存储。
 struct Response {
   // --------------------------------------------------------------------------
   // 构造
@@ -239,18 +233,30 @@ class Request {
   // --------------------------------------------------------------------------
   bool HasHeader(const char* name) const;
 
-  // --------------------------------------------------------------------------
-  // 不区分大小写的比较（ASCII）。
-  // --------------------------------------------------------------------------
+  // 不区分大小写的比较（ASCII），委托到 Response。
   static constexpr bool CaselessCompare(const char* a, const char* b,
-                                        size_t len);
+                                        size_t len) {
+    return Response::CaselessCompare(a, b, len);
+  }
 
-  // --------------------------------------------------------------------------
-  // 将无符号整数格式化为十进制字符串写入 |buf|。
-  // 返回写入的字符数（不包含 null 终止符）。
-  // --------------------------------------------------------------------------
+  // 将无符号整数格式化为十进制字符串。
   static constexpr size_t FormatDecimal(char* buf, size_t buf_size,
-                                        uint32_t val);
+                                        uint32_t val) {
+    if (buf == nullptr || buf_size == 0) return 0;
+    char tmp[32];
+    size_t idx = 0;
+    if (val == 0) {
+      tmp[idx++] = '0';
+    } else {
+      while (val > 0) {
+        tmp[idx++] = static_cast<char>('0' + (val % 10));
+        val /= 10;
+      }
+    }
+    size_t written = (idx < buf_size) ? idx : buf_size;
+    for (size_t i = 0; i < written; ++i) buf[i] = tmp[idx - 1 - i];
+    return written;
+  }
 };
 
 // ============================================================================

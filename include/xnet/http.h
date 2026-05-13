@@ -18,8 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
-
 #ifndef XNET_HTTP_H_
 #define XNET_HTTP_H_
 
@@ -33,9 +31,7 @@
 
 namespace xnet {
 
-// ============================================================================
 // Method — HTTP 请求方法
-// ============================================================================
 enum class Method : uint8_t {
   GET = 0,
   POST,
@@ -45,7 +41,7 @@ enum class Method : uint8_t {
   PATCH,
 };
 
-// 返回 |m| 对应的线缆格式字符串（例如 GET → "GET"）。
+// 返回 m 对应的线缆格式（GET → "GET"）
 constexpr inline const char* to_string(Method m) {
   switch (m) {
     case Method::GET:
@@ -65,16 +61,14 @@ constexpr inline const char* to_string(Method m) {
   }
 }
 
-// ============================================================================
 // Version — HTTP 协议版本
-// ============================================================================
 enum class Version : uint8_t {
   HTTP_1_0 = 0,
   HTTP_1_1,
   HTTP_2_0,
 };
 
-// 返回 |v| 对应的线缆格式字符串（例如 HTTP_1_1 → "HTTP/1.1"）。
+// 返回 v 对应的线缆格式（HTTP_1_1 → "HTTP/1.1"）
 constexpr inline const char* to_string(Version v) {
   switch (v) {
     case Version::HTTP_1_0:
@@ -88,24 +82,14 @@ constexpr inline const char* to_string(Version v) {
   }
 }
 
-// ============================================================================
-// Header — 单个名称/值对。
-//
-// |name| 和 |value| 均为 StringView。对于解析后的响应，它们指向传递给
-// HttpResponse::parse() 的 |header_storage| Buffer。
-// ============================================================================
+// Header — 单个名称/值对。name 和 value 均为 StringView。
 struct Header {
   StringView name;
   StringView value;
 };
 
-// ============================================================================
 // HttpRequest — 待发送的 HTTP 请求。
-//
-// 字段均为公开，便于构造。调用者负责确保 |url| 及所有 Header 的 name/value
-// 字符串所指向的内存在使用期间有效。可选的 |body| 指针必须在 serialize()
-// 的整个调用期间保持有效。
-// ============================================================================
+// 字段公开。调用者确保 |url| 及 Header name/value 引用的内存有效。
 struct HttpRequest {
   Method method;
   StringView url;
@@ -117,10 +101,10 @@ struct HttpRequest {
   Header headers[kMaxHeaders];
   size_t num_headers;
 
-  // 请求体的非拥有指针。可为 nullptr。
+  // 请求体非拥有指针。可为 nullptr。
   Buffer* body;
 
-  // 将本请求序列化为 HTTP/1.x 线缆格式写入 |out|：
+  // 序列化为 HTTP/1.x 线缆格式写入 out：
   //   METHOD /path HTTP/1.1\r\n
   //   Header: value\r\n
   //   \r\n
@@ -128,12 +112,8 @@ struct HttpRequest {
   Status serialize(Buffer& out) const;
 };
 
-// ============================================================================
 // HttpResponse — 解析后的 HTTP 响应。
-//
-// parse() 调用成功后，|headers| 中的 StringView 条目指向传入的
-// |header_storage| buffer。响应体由本结构体拥有。
-// ============================================================================
+// parse() 完成后，headers 中的 StringView 指向 header_storage buffer。
 struct HttpResponse {
   Version version;
   int status_code;
@@ -146,12 +126,9 @@ struct HttpResponse {
 
   Buffer body;
 
-  // 从 |data|（|len| 字节）中解析 HTTP 响应消息。
-  //
-  // |header_storage| 用作每个 Header 条目中 StringView 成员的后备存储。
-  // 调用者必须确保 |header_storage| 的生命周期超过本 HttpResponse 对象。
-  //
-  // 成功时返回解析后的响应，失败时返回描述解析错误的 Error。
+  // 从 data（len 字节）解析 HTTP 响应消息。
+  // header_storage 用作 Header StringView 的后备存储。
+  // 调用者确保 header_storage 生命周期超过本 HttpResponse。
   static Result<HttpResponse> parse(const char* data, size_t len,
                                     Buffer& header_storage);
 };

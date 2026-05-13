@@ -9,7 +9,7 @@
 
 namespace xnet {
 
-// 极简移动辅助（无 STL 依赖）
+// 简易移动辅助
 template <typename T>
 struct RemoveReference {
   using type = T;
@@ -28,9 +28,7 @@ typename RemoveReference<T>::type&& move(T&& t) noexcept {
   return static_cast<typename RemoveReference<T>::type&&>(t);
 }
 
-// ============================================================================
-// Status — 错误码枚举
-// ============================================================================
+// Status 枚举
 enum class Status : uint8_t {
   OK = 0,
   UNKNOWN = 1,
@@ -47,9 +45,7 @@ enum class Status : uint8_t {
   IO_ERROR = 12,
 };
 
-// ============================================================================
-// to_string — Status 的可读名称
-// ============================================================================
+// to_string — Status 可读名称
 constexpr inline const char* to_string(Status s) {
   switch (s) {
     case Status::OK:
@@ -83,30 +79,28 @@ constexpr inline const char* to_string(Status s) {
   }
 }
 
-// ============================================================================
-// Error — 状态码 + 可选的描述信息
-// ============================================================================
+// Error — 状态码 + 可选描述
 struct Error {
   Status code;
-  const char* message;  // 可选 —— 可为 nullptr
+  const char* message;  // 可为 nullptr
 
   explicit Error(Status c, const char* m = nullptr) : code(c), message(m) {}
 
-  const char* what() const { return message ? message : to_string(code); }
+  constexpr const char* what() const {
+    return message ? message : to_string(code);
+  }
 };
 
-// ============================================================================
-// Result<T> — T（成功）或 Error（失败）的标签联合
-// ============================================================================
+// Result<T> — T 或 Error 的标签联合
 template <typename T>
 class Result {
  public:
-  // --- 静态工厂 -------------------------------------------------------------
+  // -- 工厂 ----------------------------------------------------------------
   static Result ok(const T& val) { return Result(val); }
   static Result ok(T&& val) { return Result(move(val)); }
   static Result err(const Error& e) { return Result(e); }
 
-  // --- 构造函数 -------------------------------------------------------------
+  // -- 构造/赋值/析构 -----------------------------------------------------
   Result(const Result& other) : is_ok_(other.is_ok_) {
     if (is_ok_) {
       construct_value(other.storage_.value_);
@@ -151,11 +145,11 @@ class Result {
     return *this;
   }
 
-  // --- 查询 -----------------------------------------------------------------
-  bool is_ok() const { return is_ok_; }
-  bool is_err() const { return !is_ok_; }
+  // -- 查询 ----------------------------------------------------------------
+  constexpr bool is_ok() const noexcept { return is_ok_; }
+  constexpr bool is_err() const noexcept { return !is_ok_; }
 
-  // --- 访问器 ---------------------------------------------------------------
+  // -- 访问器 --------------------------------------------------------------
   T& value() {
     assert(is_ok_);
     return storage_.value_;
@@ -177,25 +171,25 @@ class Result {
   }
 
  private:
-  // --- 标签联合存储 ---------------------------------------------------------
+  // 标签联合存储
   union Storage {
     T value_;
     Error error_;
 
-    Storage() {}   // 不进行默认初始化
+    Storage() {}   // 不默认初始化
     ~Storage() {}  // 由外部管理生命周期
   } storage_;
 
   bool is_ok_;
 
-  // --- 私有构造函数（由工厂方法使用）----------------------------------------
+  // 私有构造函数（由工厂使用）
   explicit Result(const T& val) : is_ok_(true) { construct_value(val); }
 
   explicit Result(T&& val) : is_ok_(true) { construct_value(move(val)); }
 
   explicit Result(const Error& e) : is_ok_(false) { construct_error(e); }
 
-  // --- 辅助函数 -------------------------------------------------------------
+  // 辅助函数
   void construct_value(const T& val) {
     ::new (static_cast<void*>(&storage_.value_)) T(val);
   }
@@ -223,7 +217,5 @@ class Result {
 
 }  // namespace xnet
 
-// ============================================================================
-// XNET_UNUSED — 抑制未使用变量的警告
-// ============================================================================
+// XNET_UNUSED — 抑制未使用变量警告
 #define XNET_UNUSED(x) (void)(x)

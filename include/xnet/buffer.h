@@ -7,9 +7,7 @@
 
 namespace xnet {
 
-// ---------------------------------------------------------------------------
-// Allocator — 内存分配的抽象接口
-// ---------------------------------------------------------------------------
+// Allocator — 内存分配接口
 class Allocator {
  public:
   virtual ~Allocator() = default;
@@ -17,9 +15,7 @@ class Allocator {
   virtual void deallocate(void* ptr, size_t size) = 0;
 };
 
-// ---------------------------------------------------------------------------
-// MallocAllocator — 基于 malloc/free 的默认实现
-// ---------------------------------------------------------------------------
+// MallocAllocator — malloc/free 默认实现
 class MallocAllocator : public Allocator {
  public:
   void* allocate(size_t size) override { return std::malloc(size); }
@@ -29,12 +25,8 @@ class MallocAllocator : public Allocator {
   }
 };
 
-// ---------------------------------------------------------------------------
-// Buffer — 用于网络 I/O 的字节缓冲区（拥有所有权）
-//
-// 使用调用者提供的 Allocator（默认 = malloc/free）。可移动但不可拷贝；
-// 需要显式深拷贝时请使用 clone()。
-// ---------------------------------------------------------------------------
+// Buffer — 网络 I/O 字节缓冲区（拥有所有权）
+// 使用调用者提供的 Allocator（默认 = malloc/free）。可移动不可拷贝。
 class Buffer {
  public:
   static constexpr size_t npos = static_cast<size_t>(-1);
@@ -83,24 +75,26 @@ class Buffer {
   Buffer(const Buffer&) = delete;
   Buffer& operator=(const Buffer&) = delete;
 
-  // --- 访问器 ---------------------------------------------------------------
+  // -- 访问器 ----------------------------------------------------------------
 
-  const char* data() const { return data_; }
-  char* data() { return data_; }
-  char* mutable_data() { return data_; }
+  constexpr const char* data() const noexcept { return data_; }
+  constexpr char* data() noexcept { return data_; }
+  constexpr char* mutable_data() noexcept { return data_; }
 
-  size_t size() const { return size_; }
-  size_t capacity() const { return capacity_; }
-  bool empty() const { return size_ == 0; }
+  constexpr size_t size() const noexcept { return size_; }
+  constexpr size_t capacity() const noexcept { return capacity_; }
+  constexpr bool empty() const noexcept { return size_ == 0; }
 
-  void clear() { size_ = 0; }
+  constexpr void clear() noexcept { size_ = 0; }
 
-  // --- 元素访问 -------------------------------------------------------------
+  // -- 元素访问 -------------------------------------------------------------
 
-  char& operator[](size_t index) { return data_[index]; }
-  const char& operator[](size_t index) const { return data_[index]; }
+  constexpr char& operator[](size_t index) noexcept { return data_[index]; }
+  constexpr const char& operator[](size_t index) const noexcept {
+    return data_[index];
+  }
 
-  // --- 修改器 ---------------------------------------------------------------
+  // -- 修改器 ---------------------------------------------------------------
 
   void append(const void* data, size_t len);
   void append(const Buffer& other);
@@ -111,11 +105,11 @@ class Buffer {
   void reserve(size_t new_capacity);
   void swap(Buffer& other) noexcept;
 
-  // --- 查找 -----------------------------------------------------------------
+  // -- 查找 -----------------------------------------------------------------
 
   size_t find(const char* needle, size_t needle_len) const;
 
-  // --- 克隆（显式深拷贝） ---------------------------------------------------
+  // -- 克隆（深拷贝）--------------------------------------------------------
 
   Buffer clone() const;
 
