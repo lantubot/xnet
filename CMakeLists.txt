@@ -59,7 +59,7 @@ set(XNET_SOURCES
 set(XNET_PUBLIC_HEADERS
     include/xnet/xnet.h
     include/xnet/error.h
-    include/xnet/string_view.h
+    include/xnet/str_view.h
     include/xnet/buffer.h
     include/xnet/url.h
     include/xnet/http.h
@@ -108,10 +108,10 @@ if(XNET_BUILD_TESTS)
     add_test(NAME test_buffer COMMAND test_buffer)
 
     # 测试用例：字符串视图
-    add_executable(test_string_view tests/test_string_view.cc)
-    target_include_directories(test_string_view PRIVATE include tests)
-    target_link_libraries(test_string_view PRIVATE xnet)
-    add_test(NAME test_string_view COMMAND test_string_view)
+    add_executable(test_str_view tests/test_str_view.cc)
+    target_include_directories(test_str_view PRIVATE include tests)
+    target_link_libraries(test_str_view PRIVATE xnet)
+    add_test(NAME test_str_view COMMAND test_str_view)
 
     # 测试用例：URL 解析
     add_executable(test_url tests/test_url.cc)

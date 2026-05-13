@@ -35,7 +35,7 @@
 #include <cstddef>  // size_t
 
 #include "test_helpers.h"
-#include "xnet/string_view.h"
+#include "xnet/str_view.h"
 
 // =========================================================================
 // 1. 默认构造

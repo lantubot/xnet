@@ -24,5 +24,5 @@
 #include "xnet/http.h"
 #include "xnet/request.h"
 #include "xnet/socket.h"
-#include "xnet/string_view.h"
+#include "xnet/str_view.h"
 #include "xnet/url.h"

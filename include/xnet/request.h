@@ -31,7 +31,7 @@
 #include "xnet/error.h"
 #include "xnet/http.h"
 #include "xnet/socket.h"
-#include "xnet/string_view.h"
+#include "xnet/str_view.h"
 #include "xnet/url.h"
 
 namespace xnet {

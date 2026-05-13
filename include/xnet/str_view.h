@@ -20,8 +20,8 @@
 
 #pragma once
 
-#ifndef XNET_STRING_VIEW_H_
-#define XNET_STRING_VIEW_H_
+#ifndef XNET_STR_VIEW_H_
+#define XNET_STR_VIEW_H_
 
 // 无 STL 依赖。此头文件仅使用编译器内建函数和独立式 C 头文件 <stddef.h>（提供
 // size_t 和 nullptr_t）。

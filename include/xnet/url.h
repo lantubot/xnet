@@ -26,7 +26,7 @@
 #include <stddef.h>
 
 #include "xnet/error.h"
-#include "xnet/string_view.h"
+#include "xnet/str_view.h"
 
 namespace xnet {
 
