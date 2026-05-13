@@ -95,3 +95,9 @@ if(XNET_BUILD_EXAMPLES)
     add_executable(xnet_http_get examples/http_get.cpp)
     target_link_libraries(xnet_http_get PRIVATE xnet)
 endif()
+
+# ── Tests (CTest) ────────────────────────────────────────────────────
+if(XNET_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
