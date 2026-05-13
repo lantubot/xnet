@@ -1,0 +1,83 @@
+# XNet 多平台 CI 工作流
+#
+# 在推送和 PR 时运行：
+#   - Linux (GCC + Clang): 编译 + 测试 + Lint
+#   - Windows (MSVC):      编译 + 测试
+#
+# 所有构建均启用:
+#   XNET_BUILD_TESTS=ON     — 编译并运行单元测试
+#   XNET_BUILD_EXAMPLES=ON  — 编译示例程序
+#   XNET_BUILD_LINT=ON      — Linux 上启用 clang-format 代码检查
+
+name: XNet CI
+
+on:
+  push:
+    branches: [ "master", "dev" ]
+  pull_request:
+    branches: [ "master", "dev" ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        build_type: [Release]
+        c_compiler: [gcc, clang, cl]
+        include:
+          - os: windows-latest
+            c_compiler: cl
+            cpp_compiler: cl
+          - os: ubuntu-latest
+            c_compiler: gcc
+            cpp_compiler: g++
+          - os: ubuntu-latest
+            c_compiler: clang
+            cpp_compiler: clang++
+        exclude:
+          - os: windows-latest
+            c_compiler: gcc
+          - os: windows-latest
+            c_compiler: clang
+          - os: ubuntu-latest
+            c_compiler: cl
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: 安装 clang-format（Linux 专用）
+      if: runner.os == 'Linux'
+      run: sudo apt-get update -qq && sudo apt-get install -y -qq clang-format-18
+
+    - name: 设置构建输出目录
+      id: strings
+      shell: bash
+      run: |
+        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+    - name: 配置 CMake（开启所有 XNET_BUILD_XXX 选项）
+      run: >
+        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DXNET_BUILD_TESTS=ON
+        -DXNET_BUILD_EXAMPLES=ON
+        -DXNET_BUILD_LINT=${{ runner.os == 'Linux' && 'ON' || 'OFF' }}
+        -S ${{ github.workspace }}
+
+    - name: 编译
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }}
+                 --config ${{ matrix.build_type }}
+
+    - name: 运行单元测试
+      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      run: ctest --build-config ${{ matrix.build_type }} --output-on-failure
+
+    - name: 代码格式检查（clang-format Google 规范）
+      if: runner.os == 'Linux'
+      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      run: cmake --build . --target xnet_lint
