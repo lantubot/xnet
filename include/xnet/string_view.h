@@ -154,26 +154,28 @@ class StringView {
 
     if (i >= size_) return 0;  // 只有符号，没有数字
 
-    int64_t result = 0;
+    uint32_t result = 0;
     for (; i < size_; ++i) {
       char ch = data_[i];
       if (ch < '0' || ch > '9') return 0;  // 非数字 → 格式错误
-      int digit = static_cast<int>(ch - '0');
+      uint32_t digit = static_cast<uint32_t>(ch - '0');
       // 检查溢出——溢出时钳制到 INT_MAX/INT_MIN。
       // INT_MAX = 2147483647, INT_MIN = -2147483648
       if (!negative) {
-        if (result > 214748364 || (result == 214748364 && digit > 7)) {
+        if (result > 214748364U || (result == 214748364U && digit > 7U)) {
           return 2147483647;  // INT_MAX
         }
       } else {
-        if (result > 214748364 || (result == 214748364 && digit > 8)) {
+        if (result > 214748364U || (result == 214748364U && digit > 8U)) {
           return -2147483648;  // INT_MIN
         }
       }
-      result = result * 10 + digit;
+      result = result * 10U + digit;
     }
 
-    return negative ? static_cast<int>(-result) : static_cast<int>(result);
+    // 无符号运算避免有符号溢出，最后再转换
+    return negative ? static_cast<int32_t>(-result)
+                    : static_cast<int32_t>(result);
   }
 
   // 使用 FNV-1a 计算字符串内容的哈希值。
