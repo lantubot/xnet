@@ -99,5 +99,22 @@ endif()
 # ── Tests (CTest) ────────────────────────────────────────────────────
 if(XNET_BUILD_TESTS)
     enable_testing()
-    add_subdirectory(tests)
+
+    # 测试用例：缓冲区
+    add_executable(test_buffer tests/test_buffer.cc)
+    target_include_directories(test_buffer PRIVATE include tests)
+    target_link_libraries(test_buffer PRIVATE xnet)
+    add_test(NAME test_buffer COMMAND test_buffer)
+
+    # 测试用例：字符串视图
+    add_executable(test_string_view tests/test_string_view.cc)
+    target_include_directories(test_string_view PRIVATE include tests)
+    target_link_libraries(test_string_view PRIVATE xnet)
+    add_test(NAME test_string_view COMMAND test_string_view)
+
+    # 测试用例：URL 解析
+    add_executable(test_url tests/test_url.cc)
+    target_include_directories(test_url PRIVATE include tests)
+    target_link_libraries(test_url PRIVATE xnet)
+    add_test(NAME test_url COMMAND test_url)
 endif()
