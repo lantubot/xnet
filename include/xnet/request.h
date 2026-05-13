@@ -24,6 +24,7 @@
 #define XNET_REQUEST_H_
 
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 
 #include "xnet/buffer.h"
@@ -249,7 +250,7 @@ class Request {
   // 返回写入的字符数（不包含 null 终止符）。
   // --------------------------------------------------------------------------
   static constexpr size_t FormatDecimal(char* buf, size_t buf_size,
-                                        unsigned long long val);
+                                        uint64_t val);
 };
 
 // ============================================================================

@@ -97,8 +97,8 @@ Result<Response> Request::perform() {
   if (body_.size() > 0 && !HasHeader("Content-Length")) {
     // 使用栈缓冲区，足够容纳任何 64 位整数
     char cl_buf[32];
-    size_t cl_len = FormatDecimal(
-        cl_buf, sizeof(cl_buf), static_cast<unsigned long long>(body_.size()));
+    size_t cl_len = FormatDecimal(cl_buf, sizeof(cl_buf),
+                                  static_cast<uint64_t>(body_.size()));
     // 将格式化后的字符串存入 header_storage_ 以保证其生命周期
     size_t cl_off = header_storage_.size();
     header_storage_.append(cl_buf, cl_len);
@@ -237,7 +237,7 @@ constexpr bool Request::CaselessCompare(const char* a, const char* b,
 // Request::FormatDecimal — 将无符号整数格式化为十进制字符串
 // ============================================================================
 constexpr size_t Request::FormatDecimal(char* buf, size_t buf_size,
-                                        unsigned long long val) {
+                                        uint64_t val) {
   if (buf == nullptr || buf_size == 0) return 0;
 
   // 反向写入数字
