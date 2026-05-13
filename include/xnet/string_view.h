@@ -23,67 +23,61 @@
 #ifndef XNET_STRING_VIEW_H_
 #define XNET_STRING_VIEW_H_
 
-// No STL dependencies. This header uses only compiler built-ins and the
-// freestanding C header <stddef.h> for size_t and nullptr_t.
+// 无 STL 依赖。此头文件仅使用编译器内建函数和独立式 C 头文件 <stddef.h>（提供 size_t 和 nullptr_t）。
 
 #include <stddef.h>
 
 namespace xnet {
 
-// A lightweight non-owning reference to a contiguous sequence of characters.
+// 轻量级非拥有型连续字符序列引用。
 //
-// StringView does not allocate, copy, or own the underlying storage.  It is
-// the caller's responsibility to ensure that the referenced data outlives
-// the StringView.
+// StringView 不分配、不复制、不拥有底层存储。调用方必须保证引用的数据
+// 在 StringView 的生命周期内保持有效。
 //
-// All methods are constexpr-capable where possible.  No exceptions are used;
-// out-of-range access via operator[] is undefined behaviour (no bounds check).
+// 所有方法在可能的情况下均为 constexpr。不使用异常；通过 operator[] 越界
+// 访问是未定义行为（不进行边界检查）。
 
 class StringView {
  public:
   static constexpr size_t npos = static_cast<size_t>(-1);
 
-  // -- Constructors --------------------------------------------------------
+  // -- 构造函数 -----------------------------------------------------------
 
-  // Default constructor: points to nullptr with zero length.
+  // 默认构造函数：指向 nullptr，长度为零。
   constexpr StringView() noexcept : data_(nullptr), size_(0) {}
 
-  // Construct from a null-terminated string.  If s is nullptr, behaves as
-  // the default constructor.
+  // 从以 null 结尾的字符串构造。如果 s 为 nullptr，则行为等同于默认构造函数。
   constexpr StringView(const char* s) noexcept
       : data_(s), size_(s != nullptr ? StrLen(s) : 0) {}
 
-  // Construct from a pointer and an explicit length.  The caller guarantees
-  // that the first |len| characters at |s| are valid.
+  // 从指针和显式长度构造。调用方保证 |s| 指向的前 |len| 个字符是有效的。
   constexpr StringView(const char* s, size_t len) noexcept
       : data_(s), size_(len) {}
 
-  // Construct from nullptr literal: equivalent to default construction.
+  // 从 nullptr 字面量构造：等价于默认构造。
   // NOLINTNEXTLINE(google-explicit-constructor)
   constexpr StringView(std::nullptr_t) noexcept : data_(nullptr), size_(0) {}
 
-  // -- Observers -----------------------------------------------------------
+  // -- 观察器 -------------------------------------------------------------
 
-  // Returns a pointer to the underlying character data.  May be nullptr if
-  // default-constructed or constructed from nullptr.
+  // 返回指向底层字符数据的指针。如果默认构造或用 nullptr 构造，可能为 nullptr。
   constexpr const char* data() const noexcept { return data_; }
 
-  // Returns the number of characters in the view.
+  // 返回视图中的字符数。
   constexpr size_t size() const noexcept { return size_; }
 
-  // Returns the number of characters in the view (alias for size()).
+  // 返回视图中的字符数（size() 的别名）。
   constexpr size_t length() const noexcept { return size_; }
 
-  // Returns true if the view has zero length.
+  // 如果视图长度为零则返回 true。
   constexpr bool empty() const noexcept { return size_ == 0; }
 
-  // Returns the character at index |i|.  Behaviour is undefined if
-  // |i >= size()|.  No bounds checking is performed.
+  // 返回索引 |i| 处的字符。如果 |i >= size()| 则行为未定义。不进行边界检查。
   constexpr const char& operator[](size_t i) const noexcept {
     return data_[i];
   }
 
-  // -- Comparison ----------------------------------------------------------
+  // -- 比较 -----------------------------------------------------------------
 
   friend constexpr bool operator==(StringView lhs, StringView rhs) noexcept {
     if (lhs.size_ != rhs.size_) return false;
@@ -96,7 +90,7 @@ class StringView {
     return !(lhs == rhs);
   }
 
-  // Returns true if this view begins with the null-terminated string |prefix|.
+  // 如果此视图以 null 结尾的字符串 |prefix| 开头则返回 true。
   constexpr bool starts_with(const char* prefix) const noexcept {
     if (prefix == nullptr) return empty();
     size_t plen = StrLen(prefix);
@@ -104,9 +98,8 @@ class StringView {
     return Compare(data_, prefix, plen) == 0;
   }
 
-  // Searches for the first occurrence of the substring |s| starting at
-  // position |pos|.  Returns the index of the first character of the match,
-  // or npos if not found.
+  // 从位置 |pos| 开始搜索子串 |s| 的首次出现。返回匹配的第一个字符的索引，
+  // 如果未找到则返回 npos。
   constexpr size_t find(const char* s, size_t pos = 0) const noexcept {
     if (s == nullptr) return npos;
     size_t slen = StrLen(s);
@@ -121,8 +114,7 @@ class StringView {
     return npos;
   }
 
-  // Searches for the first occurrence of character |c| starting at position
-  // |pos|.  Returns the index or npos if not found.
+  // 从位置 |pos| 开始搜索字符 |c| 的首次出现。返回索引或 npos（如果未找到）。
   constexpr size_t find(char c, size_t pos = 0) const noexcept {
     if (pos >= size_) return npos;
     for (size_t i = pos; i < size_; ++i) {
@@ -131,11 +123,10 @@ class StringView {
     return npos;
   }
 
-  // -- Substring -----------------------------------------------------------
+  // -- 子串 ---------------------------------------------------------------
 
-  // Returns a view of a substring starting at |offset| with at most |count|
-  // characters.  If |offset| exceeds size(), an empty view is returned.  If
-  // |count| is npos or would extend past the end, the result is truncated.
+  // 返回起始于 |offset|、最多 |count| 个字符的子串视图。如果 |offset| 超过
+  // size()，返回空视图。如果 |count| 为 npos 或会超出末尾，结果将被截断。
   constexpr StringView substr(size_t offset, size_t count = npos) const
       noexcept {
     if (offset >= size_) return StringView();
@@ -144,11 +135,10 @@ class StringView {
     return StringView(data_ + offset, len);
   }
 
-  // -- Utility -------------------------------------------------------------
+  // -- 工具方法 -----------------------------------------------------------
 
-  // Parses the view as a decimal integer.  Leading whitespace is NOT skipped.
-  // An optional leading '-' is accepted.  Returns 0 on empty or malformed
-  // input (consistent with no-exception policy — use empty() to distinguish).
+  // 将视图解析为十进制整数。不跳过前导空白。接受可选的 '-' 前缀。在输入为空
+  // 或格式错误时返回 0（与无异常策略一致——使用 empty() 区分）。
   constexpr int to_int() const noexcept {
     if (empty() || data_ == nullptr) return 0;
 
@@ -162,14 +152,14 @@ class StringView {
       ++i;
     }
 
-    if (i >= size_) return 0;  // only sign, no digits
+    if (i >= size_) return 0;  // 只有符号，没有数字
 
     int result = 0;
     for (; i < size_; ++i) {
       char ch = data_[i];
-      if (ch < '0' || ch > '9') return 0;  // non-digit → malformed
+      if (ch < '0' || ch > '9') return 0;  // 非数字 → 格式错误
       int digit = static_cast<int>(ch - '0');
-      // Check for overflow — clamp to INT_MAX/INT_MIN on overflow.
+      // 检查溢出——溢出时钳制到 INT_MAX/INT_MIN。
       // INT_MAX = 2147483647, INT_MIN = -2147483648
       if (!negative) {
         if (result > 214748364 || (result == 214748364 && digit > 7)) {
@@ -186,11 +176,11 @@ class StringView {
     return negative ? -result : result;
   }
 
-  // Computes a hash of the string content using FNV-1a.
+  // 使用 FNV-1a 计算字符串内容的哈希值。
   constexpr size_t hash() const noexcept {
-    // FNV-1a 64-bit parameters (or 32-bit on 32-bit platforms).
-    // We use the same algorithm regardless of platform width; the result
-    // type is always size_t so the actual bits differ by platform.
+    // FNV-1a 64 位参数（32 位平台上则为 32 位）。
+    // 无论平台宽度如何，我们都使用相同的算法；结果类型始终为 size_t，
+    // 因此实际位宽因平台而异。
 #if defined(__SIZEOF_SIZE_T__) && __SIZEOF_SIZE_T__ >= 8
     constexpr size_t kOffsetBasis = 14695981039346656037ULL;
     constexpr size_t kPrime = 1099511628211ULL;
@@ -211,15 +201,15 @@ class StringView {
   const char* data_;
   size_t size_;
 
-  // constexpr polyfill for compile-time string length.
+  // constexpr 填充函数：编译期字符串长度计算。
   static constexpr size_t StrLen(const char* s) {
     size_t len = 0;
     while (s[len] != '\0') ++len;
     return len;
   }
 
-  // constexpr polyfill for compile-time bounded string comparison.
-  // Returns 0 if equal, nonzero otherwise (mirrors memcmp semantics).
+  // constexpr 填充函数：编译期有界字符串比较。
+  // 相等返回 0，不相等返回非零值（遵循 memcmp 语义）。
   static constexpr int Compare(const char* a, const char* b, size_t n) {
     for (size_t i = 0; i < n; ++i) {
       if (a[i] != b[i]) {
@@ -231,9 +221,9 @@ class StringView {
   }
 };
 
-// -- Deduction guides (C++17/20) -------------------------------------------
-// These are not strictly needed but improve ergonomics:
-//   StringView sv("hello");    // deduces StringView, not const char*
+// -- 推导指引 (C++17/20) ---------------------------------------------------
+// 这些并非严格必需，但有助于提升易用性：
+//   StringView sv("hello");    // 推导为 StringView，而非 const char*
 
 }  // namespace xnet
 

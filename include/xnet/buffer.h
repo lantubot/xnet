@@ -8,7 +8,7 @@
 namespace xnet {
 
 // ---------------------------------------------------------------------------
-// Allocator — abstract interface for memory allocation
+// Allocator — 内存分配的抽象接口
 // ---------------------------------------------------------------------------
 class Allocator {
  public:
@@ -18,7 +18,7 @@ class Allocator {
 };
 
 // ---------------------------------------------------------------------------
-// MallocAllocator — default implementation backed by malloc / free
+// MallocAllocator — 基于 malloc/free 的默认实现
 // ---------------------------------------------------------------------------
 class MallocAllocator : public Allocator {
  public:
@@ -30,16 +30,16 @@ class MallocAllocator : public Allocator {
 };
 
 // ---------------------------------------------------------------------------
-// Buffer — owning byte buffer for network I/O
+// Buffer — 用于网络 I/O 的字节缓冲区（拥有所有权）
 //
-// Uses a caller-supplied Allocator (default = malloc/free).  Movable but
-// not copyable; use clone() for explicit deep copies.
+// 使用调用者提供的 Allocator（默认 = malloc/free）。可移动但不可拷贝；
+// 需要显式深拷贝时请使用 clone()。
 // ---------------------------------------------------------------------------
 class Buffer {
  public:
   static constexpr size_t npos = static_cast<size_t>(-1);
 
-  // --- Constructors / destructor / assignment --------------------------------
+  // --- 构造函数 / 析构函数 / 赋值运算符 ---------------------------------------
 
   Buffer() : Buffer(default_allocator()) {}
 
@@ -78,11 +78,11 @@ class Buffer {
     }
   }
 
-  // No hidden copies — use clone() explicitly.
+  // 禁止隐式拷贝 —— 请显式使用 clone()
   Buffer(const Buffer&) = delete;
   Buffer& operator=(const Buffer&) = delete;
 
-  // --- Accessors ------------------------------------------------------------
+  // --- 访问器 ---------------------------------------------------------------
 
   const char* data() const { return data_; }
   char* data() { return data_; }
@@ -94,96 +94,29 @@ class Buffer {
 
   void clear() { size_ = 0; }
 
-  // --- Element access -------------------------------------------------------
+  // --- 元素访问 -------------------------------------------------------------
 
   char& operator[](size_t index) { return data_[index]; }
   const char& operator[](size_t index) const { return data_[index]; }
 
-  // --- Modifiers ------------------------------------------------------------
+  // --- 修改器 ---------------------------------------------------------------
 
-  void append(const void* data, size_t len) {
-    if (len == 0) return;
-    size_t new_size = size_ + len;
-    if (new_size > capacity_) {
-      reserve(new_size);
-    }
-    std::memcpy(data_ + size_, data, len);
-    size_ = new_size;
-  }
+  void append(const void* data, size_t len);
+  void append(const Buffer& other);
+  void append(char byte);
 
-  void append(const Buffer& other) { append(other.data_, other.size_); }
+  void pop_front(size_t n);
+  void resize(size_t new_size);
+  void reserve(size_t new_capacity);
+  void swap(Buffer& other) noexcept;
 
-  void append(char byte) { append(&byte, 1); }
+  // --- 查找 -----------------------------------------------------------------
 
-  void pop_front(size_t n) {
-    if (n >= size_) {
-      size_ = 0;
-      return;
-    }
-    size_t remaining = size_ - n;
-    std::memmove(data_, data_ + n, remaining);
-    size_ = remaining;
-  }
+  size_t find(const char* needle, size_t needle_len) const;
 
-  void resize(size_t new_size) {
-    if (new_size > capacity_) {
-      reserve(new_size);
-    }
-    if (new_size > size_) {
-      std::memset(data_ + size_, 0, new_size - size_);
-    }
-    size_ = new_size;
-  }
+  // --- 克隆（显式深拷贝） ---------------------------------------------------
 
-  void reserve(size_t new_capacity) {
-    if (new_capacity <= capacity_) return;
-    void* new_data = allocator_->allocate(new_capacity);
-    if (data_ != nullptr) {
-      std::memcpy(new_data, data_, size_);
-      allocator_->deallocate(data_, capacity_);
-    }
-    data_ = static_cast<char*>(new_data);
-    capacity_ = new_capacity;
-  }
-
-  void swap(Buffer& other) noexcept {
-    char* tmp_data = data_;
-    size_t tmp_size = size_;
-    size_t tmp_capacity = capacity_;
-    Allocator* tmp_alloc = allocator_;
-
-    data_ = other.data_;
-    size_ = other.size_;
-    capacity_ = other.capacity_;
-    allocator_ = other.allocator_;
-
-    other.data_ = tmp_data;
-    other.size_ = tmp_size;
-    other.capacity_ = tmp_capacity;
-    other.allocator_ = tmp_alloc;
-  }
-
-  // --- Search ---------------------------------------------------------------
-
-  size_t find(const char* needle, size_t needle_len) const {
-    if (needle_len == 0) return 0;
-    if (needle_len > size_) return npos;
-    for (size_t i = 0; i <= size_ - needle_len; ++i) {
-      if (std::memcmp(data_ + i, needle, needle_len) == 0) {
-        return i;
-      }
-    }
-    return npos;
-  }
-
-  // --- Clone (explicit deep copy) ------------------------------------------
-
-  Buffer clone() const {
-    Buffer result(allocator_);
-    result.reserve(size_);
-    result.append(data_, size_);
-    return result;
-  }
+  Buffer clone() const;
 
  private:
   static MallocAllocator* default_allocator() {

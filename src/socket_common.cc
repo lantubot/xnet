@@ -18,10 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Implementation of platform-independent SocketFactory methods.
+// SocketFactory 平台无关方法的实现。
 //
-// SocketFactory::create() is platform-specific and lives in ports/.
-// SocketFactory::destroy() is common to all platforms and lives here.
+// SocketFactory::create() 是平台相关的，位于 ports/ 目录下。
+// SocketFactory::destroy() 是所有平台通用的实现，放在这里。
 
 #include "xnet/socket.h"  // Socket, SocketFactory
 
@@ -32,9 +32,8 @@ void SocketFactory::destroy(Socket* s) {
   if (s == nullptr) {
     return;
   }
-  // Close the socket before deallocating.  close() is guaranteed to be
-  // idempotent per the Socket interface contract, so calling it here is
-  // safe even if the socket was already closed externally.
+  // 释放前先关闭套接字。根据 Socket 接口约定，close() 保证是幂等的，
+  // 因此即使套接字已在外部被关闭，在此处调用也是安全的。
   (void)s->close();
   delete s;
 }
