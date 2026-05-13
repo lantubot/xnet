@@ -7,10 +7,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # ── Options ──────────────────────────────────────────────────────────
-option(XNET_BUILD_EXAMPLES "Build examples" ON)
-option(XNET_BUILD_TESTS    "Build tests"    OFF)
-option(XNET_USE_EXCEPTIONS "Enable exceptions" OFF)
-option(XNET_TESTS          "Use RTTI" OFF)
+option(XNET_BUILD_EXAMPLES "Build examples"              ON)
+option(XNET_BUILD_TESTS    "Build tests"                 ON)
+option(XNET_BUILD_LINT    "Enable clang-format linting"  OFF)
+option(XNET_USE_EXCEPTIONS "Enable exceptions"           OFF)
+option(XNET_USE_RTTI      "Enable RTTI"                  OFF)
 
 # ── Compile Options ──────────────────────────────────────────────────
 if(NOT XNET_USE_EXCEPTIONS)
@@ -21,7 +22,7 @@ if(NOT XNET_USE_EXCEPTIONS)
     endif()
 endif()
 
-if(MSVC)
+if(NOT XNET_USE_RTTI AND MSVC)
     string(APPEND CMAKE_CXX_FLAGS " /GR-")
 endif()
 
@@ -117,4 +118,20 @@ if(XNET_BUILD_TESTS)
     target_include_directories(test_url PRIVATE include tests)
     target_link_libraries(test_url PRIVATE xnet)
     add_test(NAME test_url COMMAND test_url)
+endif()
+
+# ── Lint (clang-format) ──────────────────────────────────────────────
+if(XNET_BUILD_LINT)
+    # 使用 lint.sh 脚本进行代码格式检查（Google C++ 规范）
+    add_custom_target(xnet_lint
+        COMMAND ${CMAKE_SOURCE_DIR}/lint.sh check
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "检查代码格式是否符合 Google C++ 规范"
+    )
+
+    add_custom_target(xnet_format
+        COMMAND ${CMAKE_SOURCE_DIR}/lint.sh fix
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "自动修复代码格式为 Google C++ 规范"
+    )
 endif()

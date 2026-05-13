@@ -7,8 +7,8 @@
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -48,13 +48,20 @@ enum class Method : uint8_t {
 // 返回 |m| 对应的线缆格式字符串（例如 GET → "GET"）。
 constexpr inline const char* to_string(Method m) {
   switch (m) {
-    case Method::GET:    return "GET";
-    case Method::POST:   return "POST";
-    case Method::PUT:    return "PUT";
-    case Method::DELETE: return "DELETE";
-    case Method::HEAD:   return "HEAD";
-    case Method::PATCH:  return "PATCH";
-    default:             return "UNKNOWN";
+    case Method::GET:
+      return "GET";
+    case Method::POST:
+      return "POST";
+    case Method::PUT:
+      return "PUT";
+    case Method::DELETE:
+      return "DELETE";
+    case Method::HEAD:
+      return "HEAD";
+    case Method::PATCH:
+      return "PATCH";
+    default:
+      return "UNKNOWN";
   }
 }
 
@@ -70,10 +77,14 @@ enum class Version : uint8_t {
 // 返回 |v| 对应的线缆格式字符串（例如 HTTP_1_1 → "HTTP/1.1"）。
 constexpr inline const char* to_string(Version v) {
   switch (v) {
-    case Version::HTTP_1_0: return "HTTP/1.0";
-    case Version::HTTP_1_1: return "HTTP/1.1";
-    case Version::HTTP_2_0: return "HTTP/2.0";
-    default:                return "HTTP/1.1";
+    case Version::HTTP_1_0:
+      return "HTTP/1.0";
+    case Version::HTTP_1_1:
+      return "HTTP/1.1";
+    case Version::HTTP_2_0:
+      return "HTTP/2.0";
+    default:
+      return "HTTP/1.1";
   }
 }
 
@@ -96,18 +107,18 @@ struct Header {
 // 的整个调用期间保持有效。
 // ============================================================================
 struct HttpRequest {
-  Method                     method;
-  StringView                 url;
-  Version                    version;
+  Method method;
+  StringView url;
+  Version version;
 
   // 可内联存储的最大头部数量。
-  static constexpr size_t    kMaxHeaders = 64;
+  static constexpr size_t kMaxHeaders = 64;
 
-  Header                     headers[kMaxHeaders];
-  size_t                     num_headers;
+  Header headers[kMaxHeaders];
+  size_t num_headers;
 
   // 请求体的非拥有指针。可为 nullptr。
-  Buffer*                    body;
+  Buffer* body;
 
   // 将本请求序列化为 HTTP/1.x 线缆格式写入 |out|：
   //   METHOD /path HTTP/1.1\r\n
@@ -124,16 +135,16 @@ struct HttpRequest {
 // |header_storage| buffer。响应体由本结构体拥有。
 // ============================================================================
 struct HttpResponse {
-  Version                    version;
-  int                        status_code;
-  StringView                 reason;
+  Version version;
+  int status_code;
+  StringView reason;
 
-  static constexpr size_t    kMaxHeaders = 64;
+  static constexpr size_t kMaxHeaders = 64;
 
-  Header                     headers[kMaxHeaders];
-  size_t                     num_headers;
+  Header headers[kMaxHeaders];
+  size_t num_headers;
 
-  Buffer                     body;
+  Buffer body;
 
   // 从 |data|（|len| 字节）中解析 HTTP 响应消息。
   //

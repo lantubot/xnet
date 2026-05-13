@@ -19,10 +19,10 @@
 // pull in the entire public API.
 // ============================================================================
 
-#include "xnet/error.h"
-#include "xnet/string_view.h"
 #include "xnet/buffer.h"
-#include "xnet/url.h"
+#include "xnet/error.h"
 #include "xnet/http.h"
-#include "xnet/socket.h"
 #include "xnet/request.h"
+#include "xnet/socket.h"
+#include "xnet/string_view.h"
+#include "xnet/url.h"

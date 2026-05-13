@@ -7,8 +7,8 @@
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -22,11 +22,11 @@
 // Url 解析器和百分号编码 (RFC 3986) 的单元测试。
 // ---------------------------------------------------------------------------
 
-#include "xnet/url.h"
-#include "test_helpers.h"
+#include <cstdio>   // printf
+#include <cstring>  // strlen, strncmp, strstr
 
-#include <cstring>   // strlen, strncmp, strstr
-#include <cstdio>    // printf
+#include "test_helpers.h"
+#include "xnet/url.h"
 
 using namespace xnet;
 
@@ -40,8 +40,7 @@ bool SvEq(const StringView& sv, const char* expected) {
   return sv.size() == len && std::strncmp(sv.data(), expected, len) == 0;
 }
 
-#define XNET_ASSERT_SV_EQ(sv, expected) \
-  XNET_ASSERT(SvEq(sv, expected))
+#define XNET_ASSERT_SV_EQ(sv, expected) XNET_ASSERT(SvEq(sv, expected))
 
 // ============================================================================
 // 测试 1: 解析简单的 http:// URL
@@ -55,7 +54,7 @@ XNET_TEST(ParseSimpleHttp) {
   XNET_ASSERT_SV_EQ(url.scheme, "http");
   XNET_ASSERT_SV_EQ(url.host, "example.com");
   XNET_ASSERT_SV_EQ(url.path, "/path/to/page");
-  XNET_ASSERT(url.port == 0);        // 未指定端口
+  XNET_ASSERT(url.port == 0);  // 未指定端口
   XNET_ASSERT(url.query.empty());
   XNET_ASSERT(url.fragment.empty());
   XNET_ASSERT(url.username.empty());
@@ -196,38 +195,38 @@ XNET_TEST(EncodeDecodeRoundtrip) {
 
   char encoded[512];
   size_t encoded_len = 0;
-  bool ok = Url::encode(StringView(input1, len1),
-                        encoded, sizeof(encoded), &encoded_len);
+  bool ok = Url::encode(StringView(input1, len1), encoded, sizeof(encoded),
+                        &encoded_len);
   XNET_ASSERT(ok);
   XNET_ASSERT(encoded_len > 0);
   XNET_ASSERT(encoded_len < sizeof(encoded));
 
   char decoded[512];
   size_t decoded_len = 0;
-  ok = Url::decode(StringView(encoded, encoded_len),
-                   decoded, sizeof(decoded), &decoded_len);
+  ok = Url::decode(StringView(encoded, encoded_len), decoded, sizeof(decoded),
+                   &decoded_len);
   XNET_ASSERT(ok);
   XNET_ASSERT(decoded_len == len1);
   XNET_ASSERT(std::strncmp(decoded, input1, len1) == 0);
 
   // 验证特定的百分号编码序列（大写十六进制）
-  XNET_ASSERT(std::strstr(encoded, "%20") != nullptr);   // 空格
-  XNET_ASSERT(std::strstr(encoded, "%25") != nullptr);   // 百分号
-  XNET_ASSERT(std::strstr(encoded, "%40") != nullptr);   // @ 符号
-  XNET_ASSERT(std::strstr(encoded, "%26") != nullptr);   // & 符号
+  XNET_ASSERT(std::strstr(encoded, "%20") != nullptr);  // 空格
+  XNET_ASSERT(std::strstr(encoded, "%25") != nullptr);  // 百分号
+  XNET_ASSERT(std::strstr(encoded, "%40") != nullptr);  // @ 符号
+  XNET_ASSERT(std::strstr(encoded, "%26") != nullptr);  // & 符号
 
   // --- 往返测试 2: 仅非保留字符（无变化）--------------------------
   const char* input2 = "abc123-._~";
   size_t len2 = std::strlen(input2);
 
-  ok = Url::encode(StringView(input2, len2),
-                   encoded, sizeof(encoded), &encoded_len);
+  ok = Url::encode(StringView(input2, len2), encoded, sizeof(encoded),
+                   &encoded_len);
   XNET_ASSERT(ok);
   XNET_ASSERT(encoded_len == len2);  // 未扩展
   XNET_ASSERT(std::strncmp(encoded, input2, len2) == 0);
 
-  ok = Url::decode(StringView(encoded, encoded_len),
-                   decoded, sizeof(decoded), &decoded_len);
+  ok = Url::decode(StringView(encoded, encoded_len), decoded, sizeof(decoded),
+                   &decoded_len);
   XNET_ASSERT(ok);
   XNET_ASSERT(decoded_len == len2);
   XNET_ASSERT(std::strncmp(decoded, input2, len2) == 0);
@@ -235,8 +234,8 @@ XNET_TEST(EncodeDecodeRoundtrip) {
   // --- 往返测试 3: '+' 解码为空格（form-urlencoded 约定）----
   const char* plus_encoded = "hello+world";
   size_t plus_len = std::strlen(plus_encoded);
-  ok = Url::decode(StringView(plus_encoded, plus_len),
-                   decoded, sizeof(decoded), &decoded_len);
+  ok = Url::decode(StringView(plus_encoded, plus_len), decoded, sizeof(decoded),
+                   &decoded_len);
   XNET_ASSERT(ok);
   XNET_ASSERT(decoded_len == 11);
   XNET_ASSERT(std::strncmp(decoded, "hello world", 11) == 0);
@@ -258,8 +257,7 @@ XNET_TEST(EncodeDecodeRoundtrip) {
   XNET_ASSERT(!ok);
 
   // --- 边界测试: 缓冲区太小，不足以解码---------------------------------
-  ok = Url::decode(StringView("hello%20world"),
-                   decoded, 1, nullptr);
+  ok = Url::decode(StringView("hello%20world"), decoded, 1, nullptr);
   XNET_ASSERT(!ok);
 }
 

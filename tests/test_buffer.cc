@@ -7,8 +7,8 @@
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -32,10 +32,10 @@
 //  9. clear 重置为空
 // 10. 多次追加
 
+#include <cstring>  // strlen, memcmp
+
 #include "test_helpers.h"
 #include "xnet/buffer.h"
-
-#include <cstring>  // strlen, memcmp
 
 using namespace xnet;
 // =============================================================================
@@ -125,13 +125,13 @@ XNET_TEST(ReserveAndCapacity) {
   XNET_ASSERT(buf.capacity() == 0);
 
   buf.reserve(64);
-  XNET_ASSERT(buf.capacity() >= 64);   // 具体值由实现定义
+  XNET_ASSERT(buf.capacity() >= 64);  // 具体值由实现定义
   XNET_ASSERT(buf.data() != nullptr);
-  XNET_ASSERT(buf.size() == 0);        // 大小不变
+  XNET_ASSERT(buf.size() == 0);  // 大小不变
 
   // reserve 更小的容量是空操作
   buf.reserve(32);
-  XNET_ASSERT(buf.capacity() >= 64);   // 不变
+  XNET_ASSERT(buf.capacity() >= 64);  // 不变
 
   // 更大的 reserve 会实际扩容
   buf.reserve(128);
@@ -285,8 +285,8 @@ XNET_TEST(MultipleAppends) {
 
   // 验证各个位置的字符
   XNET_ASSERT(buf.data()[0] == 'A');
-  XNET_ASSERT(buf.data()[3] == 'C');   // index 3 = start of "CCC"
-  XNET_ASSERT(buf.data()[6] == 'D');   // index 6 = start of "DDDD"
+  XNET_ASSERT(buf.data()[3] == 'C');  // index 3 = start of "CCC"
+  XNET_ASSERT(buf.data()[6] == 'D');  // index 6 = start of "DDDD"
   XNET_ASSERT(buf.data()[10] == 'E');
   XNET_ASSERT(buf.data()[11] == 'F');
 }

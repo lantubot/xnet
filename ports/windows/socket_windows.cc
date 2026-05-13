@@ -7,8 +7,8 @@
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -35,7 +35,8 @@ namespace xnet {
 // ============================================================================
 // 记录 WSAStartup 是否已成功调用。对于单线程使用，静态标志足够；
 // 多线程调用者应确保在使用前调用 WSAStartup。
-// 我们使用 InterlockedExchange 操作一个 LONG 类型以提供基本的线程安全，无需 STL 原子操作。
+// 我们使用 InterlockedExchange 操作一个 LONG 类型以提供基本的线程安全，无需 STL
+// 原子操作。
 
 static LONG g_wsa_started = 0;
 
@@ -151,7 +152,7 @@ Status WinTcpSocket::connect(const char* host, int port, int timeout_ms) {
   // --- 4. DNS resolution -----------------------------------------------------
   struct addrinfo hints;
   std::memset(&hints, 0, sizeof(hints));
-  hints.ai_family   = AF_UNSPEC;   // IPv4 or IPv6
+  hints.ai_family = AF_UNSPEC;  // IPv4 or IPv6
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_protocol = IPPROTO_TCP;
 
@@ -162,8 +163,7 @@ Status WinTcpSocket::connect(const char* host, int port, int timeout_ms) {
   }
 
   // --- 5. Create socket ------------------------------------------------------
-  SOCKET s = socket(addr_info->ai_family,
-                    addr_info->ai_socktype,
+  SOCKET s = socket(addr_info->ai_family, addr_info->ai_socktype,
                     addr_info->ai_protocol);
   if (s == INVALID_SOCKET) {
     int wsa_err = WSAGetLastError();
@@ -205,7 +205,7 @@ Status WinTcpSocket::connect(const char* host, int port, int timeout_ms) {
   struct timeval tv;
   struct timeval* ptv = nullptr;
   if (timeout_ms > 0) {
-    tv.tv_sec  = timeout_ms / 1000;
+    tv.tv_sec = timeout_ms / 1000;
     tv.tv_usec = (timeout_ms % 1000) * 1000;
     ptv = &tv;
   }
@@ -271,8 +271,8 @@ Result<size_t> WinTcpSocket::send(const void* data, size_t len) {
   size_t total_sent = 0;
 
   while (total_sent < len) {
-    int sent = ::send(fd_, buf + total_sent,
-                      static_cast<int>(len - total_sent), 0);
+    int sent =
+        ::send(fd_, buf + total_sent, static_cast<int>(len - total_sent), 0);
     if (sent == SOCKET_ERROR) {
       int wsa_err = WSAGetLastError();
       // WSAEWOULDBLOCK should not occur in blocking mode, but handle it
@@ -302,8 +302,8 @@ Result<size_t> WinTcpSocket::recv(void* buf, size_t max_len) {
     return Result<size_t>::err(Error(Status::IO_ERROR, "socket not connected"));
   }
   if (buf == nullptr || max_len == 0) {
-    return Result<size_t>::err(Error(Status::INVALID_ARGUMENT,
-                                     "invalid recv arguments"));
+    return Result<size_t>::err(
+        Error(Status::INVALID_ARGUMENT, "invalid recv arguments"));
   }
 
   // --- 1. Use select() to wait for data with a default timeout ---------------
@@ -314,7 +314,7 @@ Result<size_t> WinTcpSocket::recv(void* buf, size_t max_len) {
   // Default recv timeout: 30 seconds.
   const int kRecvTimeoutMs = 30000;
   struct timeval tv;
-  tv.tv_sec  = kRecvTimeoutMs / 1000;
+  tv.tv_sec = kRecvTimeoutMs / 1000;
   tv.tv_usec = (kRecvTimeoutMs % 1000) * 1000;
 
   int rc = select(0, &read_fds, nullptr, nullptr, &tv);
@@ -329,8 +329,8 @@ Result<size_t> WinTcpSocket::recv(void* buf, size_t max_len) {
   }
 
   // --- 2. Data is available — receive it -------------------------------------
-  int nread = ::recv(fd_, static_cast<char*>(buf),
-                     static_cast<int>(max_len), 0);
+  int nread =
+      ::recv(fd_, static_cast<char*>(buf), static_cast<int>(max_len), 0);
   if (nread == SOCKET_ERROR) {
     int wsa_err = WSAGetLastError();
     // WSAEWOULDBLOCK after select() indicates a race — retry is reasonable.
@@ -384,8 +384,8 @@ Result<Socket*> SocketFactory::create(const char* host, int port) {
 
   WinTcpSocket* sock = new WinTcpSocket();
   if (sock == nullptr) {
-    return Result<Socket*>::err(Error(Status::OUT_OF_MEMORY,
-                                      "failed to allocate WinTcpSocket"));
+    return Result<Socket*>::err(
+        Error(Status::OUT_OF_MEMORY, "failed to allocate WinTcpSocket"));
   }
 
   return Result<Socket*>::ok(static_cast<Socket*>(sock));

@@ -16,13 +16,9 @@ void Buffer::append(const void* data, size_t len) {
   size_ = new_size;
 }
 
-void Buffer::append(const Buffer& other) {
-  append(other.data_, other.size_);
-}
+void Buffer::append(const Buffer& other) { append(other.data_, other.size_); }
 
-void Buffer::append(char byte) {
-  append(&byte, 1);
-}
+void Buffer::append(char byte) { append(&byte, 1); }
 
 void Buffer::pop_front(size_t n) {
   if (n >= size_) {

@@ -14,7 +14,8 @@ Result<Response> Request::perform() {
         Error(Status::INVALID_ARGUMENT, "request URL is not set"));
   }
 
-  Result<Url> url_result = Url::parse(url_.data(), url_.size() - 1);  // -1 减去 \0
+  Result<Url> url_result =
+      Url::parse(url_.data(), url_.size() - 1);  // -1 减去 \0
   if (url_result.is_err()) {
     return Result<Response>::err(url_result.error());
   }
@@ -68,8 +69,7 @@ Result<Response> Request::perform() {
   Status connect_status = sock->connect(host_.data(), port, timeout_ms_);
   if (connect_status != Status::OK) {
     SocketFactory::destroy(sock);
-    return Result<Response>::err(
-        Error(connect_status, "failed to connect"));
+    return Result<Response>::err(Error(connect_status, "failed to connect"));
   }
 
   // --- 4. 构建 HTTP 请求 -----------------------------------------------------
@@ -97,8 +97,8 @@ Result<Response> Request::perform() {
   if (body_.size() > 0 && !HasHeader("Content-Length")) {
     // 使用栈缓冲区，足够容纳任何 64 位整数
     char cl_buf[32];
-    size_t cl_len = FormatDecimal(cl_buf, sizeof(cl_buf),
-                                  static_cast<unsigned long long>(body_.size()));
+    size_t cl_len = FormatDecimal(
+        cl_buf, sizeof(cl_buf), static_cast<unsigned long long>(body_.size()));
     // 将格式化后的字符串存入 header_storage_ 以保证其生命周期
     size_t cl_off = header_storage_.size();
     header_storage_.append(cl_buf, cl_len);
@@ -126,7 +126,8 @@ Result<Response> Request::perform() {
   }
 
   // --- 6. 发送请求 -----------------------------------------------------------
-  Result<size_t> send_result = sock->send(wire_buffer.data(), wire_buffer.size());
+  Result<size_t> send_result =
+      sock->send(wire_buffer.data(), wire_buffer.size());
   if (send_result.is_err()) {
     SocketFactory::destroy(sock);
     return Result<Response>::err(send_result.error());
@@ -219,7 +220,8 @@ bool Request::HasHeader(const char* name) const {
 // ============================================================================
 // Request::CaselessCompare — 不区分大小写的 ASCII 字符串比较
 // ============================================================================
-constexpr bool Request::CaselessCompare(const char* a, const char* b, size_t len) {
+constexpr bool Request::CaselessCompare(const char* a, const char* b,
+                                        size_t len) {
   for (size_t i = 0; i < len; ++i) {
     char ca = a[i];
     char cb = b[i];
@@ -235,7 +237,7 @@ constexpr bool Request::CaselessCompare(const char* a, const char* b, size_t len
 // Request::FormatDecimal — 将无符号整数格式化为十进制字符串
 // ============================================================================
 constexpr size_t Request::FormatDecimal(char* buf, size_t buf_size,
-                              unsigned long long val) {
+                                        unsigned long long val) {
   if (buf == nullptr || buf_size == 0) return 0;
 
   // 反向写入数字

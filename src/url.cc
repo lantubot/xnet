@@ -67,9 +67,8 @@ Result<Url> Url::parse(const char* str, size_t len) {
         // IPv6 字面量（加方括号）
         size_t close = FindClosingBracket(auth.data(), auth.size(), 0);
         if (close == StringView::npos) {
-          return Result<Url>::err(
-              Error(Status::INVALID_ARGUMENT,
-                    "Unclosed IPv6 bracket in URL host"));
+          return Result<Url>::err(Error(Status::INVALID_ARGUMENT,
+                                        "Unclosed IPv6 bracket in URL host"));
         }
         url.host = auth.substr(1, close - 1);  // 去掉方括号
         // 检查 ']' 后是否有端口
@@ -134,8 +133,7 @@ Result<Url> Url::parse(const char* str, size_t len) {
 // ============================================================================
 // Url::ParseScheme — RFC 3986 第 3.1 节
 // ============================================================================
-size_t Url::ParseScheme(const char* str, size_t len,
-                        StringView& scheme) {
+size_t Url::ParseScheme(const char* str, size_t len, StringView& scheme) {
   if (str == nullptr || len == 0) return StringView::npos;
 
   // 首字符必须是字母。
@@ -164,8 +162,7 @@ size_t Url::ParseScheme(const char* str, size_t len,
 // ============================================================================
 // Url::FindClosingBracket — 查找与 |pos| 处 '[' 匹配的 ']'
 // ============================================================================
-size_t Url::FindClosingBracket(const char* str, size_t len,
-                               size_t pos) {
+size_t Url::FindClosingBracket(const char* str, size_t len, size_t pos) {
   if (pos >= len || str[pos] != '[') return StringView::npos;
   for (size_t i = pos + 1; i < len; ++i) {
     if (str[i] == ']') return i;
@@ -176,8 +173,8 @@ size_t Url::FindClosingBracket(const char* str, size_t len,
 // ============================================================================
 // Url::encode — 对字符串进行百分号编码
 // ============================================================================
-bool Url::encode(const StringView& input, char* output,
-                 size_t output_size, size_t* written) {
+bool Url::encode(const StringView& input, char* output, size_t output_size,
+                 size_t* written) {
   static const char kHexDigits[] = "0123456789ABCDEF";
 
   if (output == nullptr || output_size == 0) {
@@ -217,8 +214,8 @@ bool Url::encode(const StringView& input, char* output,
 // ============================================================================
 // Url::decode — 对字符串进行百分号解码
 // ============================================================================
-bool Url::decode(const StringView& input, char* output,
-                 size_t output_size, size_t* written) {
+bool Url::decode(const StringView& input, char* output, size_t output_size,
+                 size_t* written) {
   if (output == nullptr || output_size == 0) {
     if (written != nullptr) *written = 0;
     return false;
@@ -236,7 +233,7 @@ bool Url::decode(const StringView& input, char* output,
         return false;
       }
       int high = HexValue(input[i + 1]);
-      int low  = HexValue(input[i + 2]);
+      int low = HexValue(input[i + 2]);
       if (high < 0 || low < 0) {
         if (written != nullptr) *written = out_pos;
         return false;

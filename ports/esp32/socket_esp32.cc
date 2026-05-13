@@ -7,8 +7,8 @@
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -20,10 +20,11 @@
 
 #include "socket_esp32.h"
 
-#include <cerrno>
-#include <cstring>   // memset, memcpy
-#include <netdb.h>   // gethostbyname
 #include <arpa/inet.h>  // inet_addr, htons
+#include <netdb.h>      // gethostbyname
+
+#include <cerrno>
+#include <cstring>  // memset, memcpy
 
 #include "xnet/socket.h"
 
@@ -38,9 +39,7 @@ static const char* const TAG = "xnet.esp32";
 
 Esp32TcpSocket::Esp32TcpSocket() : fd_(-1) {}
 
-Esp32TcpSocket::~Esp32TcpSocket() {
-  close();
-}
+Esp32TcpSocket::~Esp32TcpSocket() { close(); }
 
 // ── errno_to_status ─────────────────────────────────────────────────────────
 // static
@@ -77,7 +76,8 @@ Status Esp32TcpSocket::errno_to_status(int err) {
 Status Esp32TcpSocket::connect(const char* host, int port, int timeout_ms) {
   // Bail early on invalid arguments.
   if (host == nullptr || host[0] == '\0' || port <= 0 || port > 65535) {
-    ESP_LOGE(TAG, "connect: invalid args (host=%p, port=%d)", (const void*)host, port);
+    ESP_LOGE(TAG, "connect: invalid args (host=%p, port=%d)", (const void*)host,
+             port);
     return Status::INVALID_ARGUMENT;
   }
 
@@ -92,7 +92,7 @@ Status Esp32TcpSocket::connect(const char* host, int port, int timeout_ms) {
   // Set receive and send timeouts if requested.
   if (timeout_ms > 0) {
     struct timeval tv;
-    tv.tv_sec  = timeout_ms / 1000;
+    tv.tv_sec = timeout_ms / 1000;
     tv.tv_usec = (timeout_ms % 1000) * 1000;
 
     if (setsockopt(fd_, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
@@ -107,7 +107,7 @@ Status Esp32TcpSocket::connect(const char* host, int port, int timeout_ms) {
   struct sockaddr_in addr;
   std::memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
-  addr.sin_port   = htons(static_cast<uint16_t>(port));
+  addr.sin_port = htons(static_cast<uint16_t>(port));
 
   // Try interpreting |host| as a dotted-quad IP address first.
   addr.sin_addr.s_addr = inet_addr(host);
@@ -129,7 +129,8 @@ Status Esp32TcpSocket::connect(const char* host, int port, int timeout_ms) {
   }
 
   // Initiate the TCP connection.
-  if (::connect(fd_, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) < 0) {
+  if (::connect(fd_, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) <
+      0) {
     int err = errno;
     ESP_LOGE(TAG, "connect(\"%s\", %d) failed: errno=%d", host, port, err);
     ::close(fd_);
@@ -144,7 +145,8 @@ Status Esp32TcpSocket::connect(const char* host, int port, int timeout_ms) {
 // ── send ────────────────────────────────────────────────────────────────────
 Result<size_t> Esp32TcpSocket::send(const void* data, size_t len) {
   if (fd_ < 0) {
-    return Result<size_t>::err(Error(Status::IO_ERROR, "send: socket not connected"));
+    return Result<size_t>::err(
+        Error(Status::IO_ERROR, "send: socket not connected"));
   }
 
   const uint8_t* buf = static_cast<const uint8_t*>(data);
@@ -176,7 +178,8 @@ Result<size_t> Esp32TcpSocket::send(const void* data, size_t len) {
 // ── recv ────────────────────────────────────────────────────────────────────
 Result<size_t> Esp32TcpSocket::recv(void* buf, size_t max_len) {
   if (fd_ < 0) {
-    return Result<size_t>::err(Error(Status::IO_ERROR, "recv: socket not connected"));
+    return Result<size_t>::err(
+        Error(Status::IO_ERROR, "recv: socket not connected"));
   }
 
   ssize_t n = ::recv(fd_, buf, max_len, 0);
@@ -222,8 +225,8 @@ Result<Socket*> SocketFactory::create(const char* host, int port) {
 
   Esp32TcpSocket* sock = new (std::nothrow) Esp32TcpSocket();
   if (sock == nullptr) {
-    return Result<Socket*>::err(Error(Status::OUT_OF_MEMORY,
-                                       "SocketFactory::create: allocation failed"));
+    return Result<Socket*>::err(Error(
+        Status::OUT_OF_MEMORY, "SocketFactory::create: allocation failed"));
   }
   return Result<Socket*>::ok(static_cast<Socket*>(sock));
 }

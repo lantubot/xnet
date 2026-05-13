@@ -39,7 +39,8 @@ class Buffer {
  public:
   static constexpr size_t npos = static_cast<size_t>(-1);
 
-  // --- 构造函数 / 析构函数 / 赋值运算符 ---------------------------------------
+  // --- 构造函数 / 析构函数 / 赋值运算符
+  // ---------------------------------------
 
   Buffer() : Buffer(default_allocator()) {}
 

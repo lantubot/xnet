@@ -7,8 +7,8 @@
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -23,15 +23,15 @@
 #ifndef XNET_REQUEST_H_
 #define XNET_REQUEST_H_
 
+#include <cstddef>
+#include <cstring>
+
 #include "xnet/buffer.h"
 #include "xnet/error.h"
 #include "xnet/http.h"
 #include "xnet/socket.h"
 #include "xnet/string_view.h"
 #include "xnet/url.h"
-
-#include <cstddef>
-#include <cstring>
 
 namespace xnet {
 
@@ -93,19 +93,17 @@ struct Response {
   constexpr size_t num_headers() const { return num_headers_; }
 
   // 返回索引 |i| 处的头部。如果 |i| >= num_headers()，则行为未定义。
-  constexpr const Header& header_at(size_t i) const {
-    return headers_[i];
-  }
+  constexpr const Header& header_at(size_t i) const { return headers_[i]; }
 
  private:
   friend class Request;  // Request 构建 Response
 
-  int       status_code_;
-  Version   version_;
-  Header    headers_[HttpResponse::kMaxHeaders];
-  size_t    num_headers_;
-  Buffer    storage_;   // 头部名称/值 StringView 的后备存储
-  Buffer    body_;      // 拥有的响应体
+  int status_code_;
+  Version version_;
+  Header headers_[HttpResponse::kMaxHeaders];
+  size_t num_headers_;
+  Buffer storage_;  // 头部名称/值 StringView 的后备存储
+  Buffer body_;     // 拥有的响应体
 
   // --------------------------------------------------------------------------
   // 对两个等长 ASCII 字符串进行不区分大小写的比较。
@@ -145,9 +143,7 @@ class Request {
   // 构造
   // --------------------------------------------------------------------------
   Request()
-      : method_(Method::GET),
-        timeout_ms_(kDefaultTimeoutMs),
-        num_headers_(0) {}
+      : method_(Method::GET), timeout_ms_(kDefaultTimeoutMs), num_headers_(0) {}
 
   // --------------------------------------------------------------------------
   // 构建器方法（流式接口）
@@ -227,15 +223,15 @@ class Request {
   // --------------------------------------------------------------------------
   // 成员数据
   // --------------------------------------------------------------------------
-  Method    method_;
-  Buffer    url_;              // 以 null 结尾的 URL 字符串
-  Buffer    host_;             // 以 null 结尾的主机字符串（用于 Host 头部）
-  Buffer    path_;             // 以 null 结尾的请求路径
-  int       timeout_ms_;
-  Header    headers_[HttpRequest::kMaxHeaders];
-  size_t    num_headers_;
-  Buffer    header_storage_;   // 构建器头部名称/值字符串的存储
-  Buffer    body_;             // 请求体数据
+  Method method_;
+  Buffer url_;   // 以 null 结尾的 URL 字符串
+  Buffer host_;  // 以 null 结尾的主机字符串（用于 Host 头部）
+  Buffer path_;  // 以 null 结尾的请求路径
+  int timeout_ms_;
+  Header headers_[HttpRequest::kMaxHeaders];
+  size_t num_headers_;
+  Buffer header_storage_;  // 构建器头部名称/值字符串的存储
+  Buffer body_;            // 请求体数据
 
   // --------------------------------------------------------------------------
   // 检查具有给定名称的头部是否已存在（不区分大小写）。
@@ -262,38 +258,24 @@ class Request {
 
 // 对 |url| 发起 HTTP GET 请求。
 inline Result<Response> get(const char* url) {
-  return Request()
-      .url(url)
-      .method(Method::GET)
-      .perform();
+  return Request().url(url).method(Method::GET).perform();
 }
 
 // 对 |url| 发起带有给定 |body| 的 HTTP POST 请求。
 inline Result<Response> post(const char* url, const char* body,
                              size_t body_len) {
-  return Request()
-      .url(url)
-      .method(Method::POST)
-      .body(body, body_len)
-      .perform();
+  return Request().url(url).method(Method::POST).body(body, body_len).perform();
 }
 
 // 对 |url| 发起带有给定 |body| 的 HTTP PUT 请求。
 inline Result<Response> put(const char* url, const char* body,
                             size_t body_len) {
-  return Request()
-      .url(url)
-      .method(Method::PUT)
-      .body(body, body_len)
-      .perform();
+  return Request().url(url).method(Method::PUT).body(body, body_len).perform();
 }
 
 // 对 |url| 发起 HTTP DELETE 请求。
 inline Result<Response> del(const char* url) {
-  return Request()
-      .url(url)
-      .method(Method::DELETE)
-      .perform();
+  return Request().url(url).method(Method::DELETE).perform();
 }
 
 }  // namespace xnet

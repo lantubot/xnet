@@ -1,6 +1,7 @@
 // XNet HTTP — 编译单元
 
 #include "xnet/http.h"
+
 #include <cstring>
 
 namespace xnet {
@@ -49,9 +50,9 @@ Result<HttpResponse> HttpResponse::parse(const char* data, size_t len,
                                          Buffer& header_storage) {
   // --- 初始化默认响应 -------------------------------------------------------
   HttpResponse resp;
-  resp.version      = Version::HTTP_1_1;
-  resp.status_code  = 0;
-  resp.num_headers  = 0;
+  resp.version = Version::HTTP_1_1;
+  resp.status_code = 0;
+  resp.num_headers = 0;
 
   if (data == nullptr || len == 0) {
     return Result<HttpResponse>::err(
@@ -70,8 +71,8 @@ Result<HttpResponse> HttpResponse::parse(const char* data, size_t len,
     ++space1;
   }
   if (space1 == len || space1 == pos) {
-    return Result<HttpResponse>::err(
-        Error(Status::PROTOCOL_ERROR, "cannot find HTTP version in status line"));
+    return Result<HttpResponse>::err(Error(
+        Status::PROTOCOL_ERROR, "cannot find HTTP version in status line"));
   }
 
   // 确定版本。

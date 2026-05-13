@@ -7,8 +7,8 @@
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -20,13 +20,13 @@
 
 #include "socket_linux.h"
 
+#include <arpa/inet.h>  // htons, inet_pton
+#include <netdb.h>      // getaddrinfo, freeaddrinfo
+
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
-#include <new>          // std::nothrow
-
-#include <arpa/inet.h>  // htons, inet_pton
-#include <netdb.h>      // getaddrinfo, freeaddrinfo
+#include <new>  // std::nothrow
 
 #include "xnet/socket.h"
 
@@ -38,11 +38,10 @@ namespace xnet {
 
 LinuxTcpSocket::LinuxTcpSocket() : fd_(-1) {}
 
-LinuxTcpSocket::~LinuxTcpSocket() {
-  close();
-}
+LinuxTcpSocket::~LinuxTcpSocket() { close(); }
 
-// ── errno_to_status（错误码转状态）────────────────────────────────────────────
+// ──
+// errno_to_status（错误码转状态）────────────────────────────────────────────
 // 静态方法
 Status LinuxTcpSocket::errno_to_status(int err) {
   switch (err) {
@@ -106,8 +105,8 @@ Status LinuxTcpSocket::connect(const char* host, int port, int timeout_ms) {
   // 通过 getaddrinfo 解析远程地址
   struct addrinfo hints;
   std::memset(&hints, 0, sizeof(hints));
-  hints.ai_family   = AF_INET;       // 仅 IPv4
-  hints.ai_socktype = SOCK_STREAM;   // TCP 协议
+  hints.ai_family = AF_INET;        // 仅 IPv4
+  hints.ai_socktype = SOCK_STREAM;  // TCP 协议
 
   char port_str[8];
   std::snprintf(port_str, sizeof(port_str), "%d", port);
@@ -138,7 +137,7 @@ Status LinuxTcpSocket::connect(const char* host, int port, int timeout_ms) {
 
     // 使用 poll() 等待连接完成
     struct pollfd pfd;
-    pfd.fd     = fd_;
+    pfd.fd = fd_;
     pfd.events = POLLOUT;
 
     int poll_rc = poll(&pfd, 1, timeout_ms > 0 ? timeout_ms : -1);
@@ -214,7 +213,7 @@ Result<size_t> LinuxTcpSocket::send(const void* data, size_t len) {
     if (err == EAGAIN || err == EWOULDBLOCK) {
       // 套接字缓冲区已满——等待 POLLOUT，然后重试
       struct pollfd pfd;
-      pfd.fd     = fd_;
+      pfd.fd = fd_;
       pfd.events = POLLOUT;
 
       int poll_rc = poll(&pfd, 1, -1);  // 无限等待
@@ -230,8 +229,7 @@ Result<size_t> LinuxTcpSocket::send(const void* data, size_t len) {
     }
 
     // 永久性错误
-    return Result<size_t>::err(
-        Error(errno_to_status(err), "send failed"));
+    return Result<size_t>::err(Error(errno_to_status(err), "send failed"));
   }
 
   return Result<size_t>::ok(total_sent);
@@ -246,7 +244,7 @@ Result<size_t> LinuxTcpSocket::recv(void* buf, size_t max_len) {
 
   // 使用 poll() 等待套接字变为可读
   struct pollfd pfd;
-  pfd.fd     = fd_;
+  pfd.fd = fd_;
   pfd.events = POLLIN;
 
   int poll_rc = poll(&pfd, 1, -1);  // 阻塞等待，直到数据到达
@@ -261,8 +259,7 @@ Result<size_t> LinuxTcpSocket::recv(void* buf, size_t max_len) {
 
   if (poll_rc == 0) {
     // 使用无限超时的 poll() 本不应超时，但仍妥善处理以防万一
-    return Result<size_t>::err(
-        Error(Status::TIMEOUT, "recv: poll returned 0"));
+    return Result<size_t>::err(Error(Status::TIMEOUT, "recv: poll returned 0"));
   }
 
   // 套接字可读——尝试接收数据
@@ -273,8 +270,7 @@ Result<size_t> LinuxTcpSocket::recv(void* buf, size_t max_len) {
       // 暂时性错误——从 poll 开始重试
       return recv(buf, max_len);
     }
-    return Result<size_t>::err(
-        Error(errno_to_status(err), "recv failed"));
+    return Result<size_t>::err(Error(errno_to_status(err), "recv failed"));
   }
 
   // n == 0 表示正常 EOF（对端关闭了连接）
@@ -309,9 +305,8 @@ Result<Socket*> SocketFactory::create(const char* host, int port) {
 
   LinuxTcpSocket* sock = new (std::nothrow) LinuxTcpSocket();
   if (sock == nullptr) {
-    return Result<Socket*>::err(
-        Error(Status::OUT_OF_MEMORY,
-              "SocketFactory::create: allocation failed"));
+    return Result<Socket*>::err(Error(
+        Status::OUT_OF_MEMORY, "SocketFactory::create: allocation failed"));
   }
   return Result<Socket*>::ok(static_cast<Socket*>(sock));
 }

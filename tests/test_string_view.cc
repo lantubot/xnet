@@ -7,8 +7,8 @@
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -31,11 +31,11 @@
 //  8. to_int（基本解析）
 //  9. default 构造和非空视图的 empty()
 
-#include "test_helpers.h"
-#include "xnet/string_view.h"
-
 #include <climits>  // INT_MAX, INT_MIN
 #include <cstddef>  // size_t
+
+#include "test_helpers.h"
+#include "xnet/string_view.h"
 
 // =========================================================================
 // 1. 默认构造
@@ -97,8 +97,8 @@ XNET_TEST(Comparison) {
   constexpr xnet::StringView a("abc");
   constexpr xnet::StringView b("abc");
   constexpr xnet::StringView c("xyz");
-  constexpr xnet::StringView d("ab");   // 较短
-  constexpr xnet::StringView e("abcd"); // 较长
+  constexpr xnet::StringView d("ab");    // 较短
+  constexpr xnet::StringView e("abcd");  // 较长
   xnet::StringView empty;
 
   // 相等性

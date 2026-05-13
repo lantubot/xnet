@@ -7,8 +7,8 @@
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -23,7 +23,8 @@
 #ifndef XNET_STRING_VIEW_H_
 #define XNET_STRING_VIEW_H_
 
-// 无 STL 依赖。此头文件仅使用编译器内建函数和独立式 C 头文件 <stddef.h>（提供 size_t 和 nullptr_t）。
+// 无 STL 依赖。此头文件仅使用编译器内建函数和独立式 C 头文件 <stddef.h>（提供
+// size_t 和 nullptr_t）。
 
 #include <stddef.h>
 
@@ -73,9 +74,7 @@ class StringView {
   constexpr bool empty() const noexcept { return size_ == 0; }
 
   // 返回索引 |i| 处的字符。如果 |i >= size()| 则行为未定义。不进行边界检查。
-  constexpr const char& operator[](size_t i) const noexcept {
-    return data_[i];
-  }
+  constexpr const char& operator[](size_t i) const noexcept { return data_[i]; }
 
   // -- 比较 -----------------------------------------------------------------
 
@@ -127,8 +126,8 @@ class StringView {
 
   // 返回起始于 |offset|、最多 |count| 个字符的子串视图。如果 |offset| 超过
   // size()，返回空视图。如果 |count| 为 npos 或会超出末尾，结果将被截断。
-  constexpr StringView substr(size_t offset, size_t count = npos) const
-      noexcept {
+  constexpr StringView substr(size_t offset,
+                              size_t count = npos) const noexcept {
     if (offset >= size_) return StringView();
     size_t remaining = size_ - offset;
     size_t len = (count < remaining) ? count : remaining;

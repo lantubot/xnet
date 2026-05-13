@@ -7,8 +7,8 @@
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -23,10 +23,10 @@
 #ifndef XNET_URL_H_
 #define XNET_URL_H_
 
+#include <stddef.h>
+
 #include "xnet/error.h"
 #include "xnet/string_view.h"
-
-#include <stddef.h>
 
 namespace xnet {
 
@@ -43,16 +43,17 @@ namespace xnet {
 // ============================================================================
 class Url {
  public:
-  // -- URL 组件 ----------------------------------------------------------------
+  // -- URL 组件
+  // ----------------------------------------------------------------
 
-  StringView scheme;     // 例如 "http"、"https" — 无 scheme 时为空
-  StringView host;       // 例如 "example.com"、"::1"（IPv6 不带方括号）
-  StringView path;       // 例如 "/index.html"，不存在时为空
-  StringView query;      // 例如 "q=hello&n=1"，不存在时为空
-  StringView fragment;   // 例如 "section-2"，不存在时为空
-  StringView username;   // 例如 "user"，不存在时为空
-  StringView password;   // 例如 "pass"，不存在时为空
-  int port = 0;          // 0 表示"未指定"
+  StringView scheme;  // 例如 "http"、"https" — 无 scheme 时为空
+  StringView host;    // 例如 "example.com"、"::1"（IPv6 不带方括号）
+  StringView path;    // 例如 "/index.html"，不存在时为空
+  StringView query;   // 例如 "q=hello&n=1"，不存在时为空
+  StringView fragment;  // 例如 "section-2"，不存在时为空
+  StringView username;  // 例如 "user"，不存在时为空
+  StringView password;  // 例如 "pass"，不存在时为空
+  int port = 0;         // 0 表示"未指定"
 
   // -- 解析 ------------------------------------------------------------------
   //
@@ -75,22 +76,23 @@ class Url {
   // 对 |input| 进行百分号编码，写入 |output|（|output_size| 字节）。
   // 成功返回 true；缓冲区过小返回 false。
   // 若 |written| 非空，则写入实际写入的字节数（不追加 null 终止符）。
-  // 非保留字符（A-Z、a-z、0-9、- . _ ~）直接通过；其余字符变为 %XX（大写十六进制）。
-  static bool encode(const StringView& input, char* output,
-                     size_t output_size, size_t* written = nullptr);
+  // 非保留字符（A-Z、a-z、0-9、- . _ ~）直接通过；其余字符变为
+  // %XX（大写十六进制）。
+  static bool encode(const StringView& input, char* output, size_t output_size,
+                     size_t* written = nullptr);
 
   // 对 |input| 进行百分号解码，写入 |output|（|output_size| 字节）。
   // 成功返回 true；十六进制序列格式错误或缓冲区过小时返回 false。
   // '+' 解码为空格（application/x-www-form-urlencoded 约定）。
   // 若 |written| 非空，则写入实际写入的字节数。
-  static bool decode(const StringView& input, char* output,
-                     size_t output_size, size_t* written = nullptr);
+  static bool decode(const StringView& input, char* output, size_t output_size,
+                     size_t* written = nullptr);
 
  private:
   // 查找 scheme（如果有），返回其后冒号的索引。
-  // 成功时设置 |scheme| 为 scheme 子串。未找到 scheme 时返回 npos（RFC 3986 第 3.1 节）。
-  static size_t ParseScheme(const char* str, size_t len,
-                            StringView& scheme);
+  // 成功时设置 |scheme| 为 scheme 子串。未找到 scheme 时返回 npos（RFC 3986
+  // 第 3.1 节）。
+  static size_t ParseScheme(const char* str, size_t len, StringView& scheme);
 
   // 查找从 |pos| 开始的 IPv6 字面量的匹配右方括号。
   // 返回 ']' 的索引，格式错误时返回 npos。

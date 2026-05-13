@@ -1,21 +1,27 @@
 #pragma once
 
-#include <cstdint>
-#include <cstddef>
-#include <cstring>
 #include <cassert>
-#include <type_traits>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <new>
+#include <type_traits>
 
 namespace xnet {
 
 // 极简移动辅助（无 STL 依赖）
 template <typename T>
-struct RemoveReference { using type = T; };
+struct RemoveReference {
+  using type = T;
+};
 template <typename T>
-struct RemoveReference<T&> { using type = T; };
+struct RemoveReference<T&> {
+  using type = T;
+};
 template <typename T>
-struct RemoveReference<T&&> { using type = T; };
+struct RemoveReference<T&&> {
+  using type = T;
+};
 
 template <typename T>
 typename RemoveReference<T>::type&& move(T&& t) noexcept {
@@ -26,19 +32,19 @@ typename RemoveReference<T>::type&& move(T&& t) noexcept {
 // Status — 错误码枚举
 // ============================================================================
 enum class Status : uint8_t {
-  OK                  = 0,
-  UNKNOWN             = 1,
-  INVALID_ARGUMENT    = 2,
-  NOT_FOUND           = 3,
-  TIMEOUT             = 4,
-  CONNECTION_REFUSED  = 5,
-  CONNECTION_RESET    = 6,
-  DNS_FAILURE         = 7,
-  PROTOCOL_ERROR      = 8,
-  OUT_OF_MEMORY       = 9,
+  OK = 0,
+  UNKNOWN = 1,
+  INVALID_ARGUMENT = 2,
+  NOT_FOUND = 3,
+  TIMEOUT = 4,
+  CONNECTION_REFUSED = 5,
+  CONNECTION_RESET = 6,
+  DNS_FAILURE = 7,
+  PROTOCOL_ERROR = 8,
+  OUT_OF_MEMORY = 9,
   UNSUPPORTED_PROTOCOL = 10,
-  SSL_ERROR           = 11,
-  IO_ERROR            = 12,
+  SSL_ERROR = 11,
+  IO_ERROR = 12,
 };
 
 // ============================================================================
@@ -46,20 +52,34 @@ enum class Status : uint8_t {
 // ============================================================================
 constexpr inline const char* to_string(Status s) {
   switch (s) {
-    case Status::OK:                 return "OK";
-    case Status::UNKNOWN:            return "UNKNOWN";
-    case Status::INVALID_ARGUMENT:   return "INVALID_ARGUMENT";
-    case Status::NOT_FOUND:          return "NOT_FOUND";
-    case Status::TIMEOUT:            return "TIMEOUT";
-    case Status::CONNECTION_REFUSED: return "CONNECTION_REFUSED";
-    case Status::CONNECTION_RESET:   return "CONNECTION_RESET";
-    case Status::DNS_FAILURE:        return "DNS_FAILURE";
-    case Status::PROTOCOL_ERROR:     return "PROTOCOL_ERROR";
-    case Status::OUT_OF_MEMORY:      return "OUT_OF_MEMORY";
-    case Status::UNSUPPORTED_PROTOCOL: return "UNSUPPORTED_PROTOCOL";
-    case Status::SSL_ERROR:          return "SSL_ERROR";
-    case Status::IO_ERROR:           return "IO_ERROR";
-    default:                         return "UNKNOWN";
+    case Status::OK:
+      return "OK";
+    case Status::UNKNOWN:
+      return "UNKNOWN";
+    case Status::INVALID_ARGUMENT:
+      return "INVALID_ARGUMENT";
+    case Status::NOT_FOUND:
+      return "NOT_FOUND";
+    case Status::TIMEOUT:
+      return "TIMEOUT";
+    case Status::CONNECTION_REFUSED:
+      return "CONNECTION_REFUSED";
+    case Status::CONNECTION_RESET:
+      return "CONNECTION_RESET";
+    case Status::DNS_FAILURE:
+      return "DNS_FAILURE";
+    case Status::PROTOCOL_ERROR:
+      return "PROTOCOL_ERROR";
+    case Status::OUT_OF_MEMORY:
+      return "OUT_OF_MEMORY";
+    case Status::UNSUPPORTED_PROTOCOL:
+      return "UNSUPPORTED_PROTOCOL";
+    case Status::SSL_ERROR:
+      return "SSL_ERROR";
+    case Status::IO_ERROR:
+      return "IO_ERROR";
+    default:
+      return "UNKNOWN";
   }
 }
 
@@ -67,11 +87,10 @@ constexpr inline const char* to_string(Status s) {
 // Error — 状态码 + 可选的描述信息
 // ============================================================================
 struct Error {
-  Status      code;
-  const char* message;   // 可选 —— 可为 nullptr
+  Status code;
+  const char* message;  // 可选 —— 可为 nullptr
 
-  explicit Error(Status c, const char* m = nullptr)
-    : code(c), message(m) {}
+  explicit Error(Status c, const char* m = nullptr) : code(c), message(m) {}
 
   const char* what() const { return message ? message : to_string(code); }
 };
@@ -160,27 +179,21 @@ class Result {
  private:
   // --- 标签联合存储 ---------------------------------------------------------
   union Storage {
-    T     value_;
+    T value_;
     Error error_;
 
-    Storage() {}  // 不进行默认初始化
-    ~Storage() {} // 由外部管理生命周期
+    Storage() {}   // 不进行默认初始化
+    ~Storage() {}  // 由外部管理生命周期
   } storage_;
 
   bool is_ok_;
 
   // --- 私有构造函数（由工厂方法使用）----------------------------------------
-  explicit Result(const T& val) : is_ok_(true) {
-    construct_value(val);
-  }
+  explicit Result(const T& val) : is_ok_(true) { construct_value(val); }
 
-  explicit Result(T&& val) : is_ok_(true) {
-    construct_value(move(val));
-  }
+  explicit Result(T&& val) : is_ok_(true) { construct_value(move(val)); }
 
-  explicit Result(const Error& e) : is_ok_(false) {
-    construct_error(e);
-  }
+  explicit Result(const Error& e) : is_ok_(false) { construct_error(e); }
 
   // --- 辅助函数 -------------------------------------------------------------
   void construct_value(const T& val) {
