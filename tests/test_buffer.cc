@@ -18,19 +18,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Unit tests for xnet::Buffer.
+// xnet::Buffer 的单元测试。
 //
-// Test cases:
-//  1. Default construction (null, size=0)
-//  2. Append bytes and check size/data
-//  3. Append char
+// 测试用例：
+//  1. 默认构造（null, size=0）
+//  2. 追加字节并检查大小/数据
+//  3. 追加单个字符
 //  4. pop_front
-//  5. reserve and capacity
+//  5. reserve 和 capacity
 //  6. resize
 //  7. swap
-//  8. Find substring in buffer
-//  9. Clear resets to empty
-// 10. Multiple appends
+//  8. 在缓冲区中查找子串
+//  9. clear 重置为空
+// 10. 多次追加
 
 #include "test_helpers.h"
 #include "xnet/buffer.h"
@@ -39,7 +39,7 @@
 
 using namespace xnet;
 // =============================================================================
-// 1. Default construction — null data, size == 0
+// 1. 默认构造 — null 数据，size == 0
 // =============================================================================
 XNET_TEST(DefaultConstruction) {
   Buffer buf;
@@ -51,7 +51,7 @@ XNET_TEST(DefaultConstruction) {
 }
 
 // =============================================================================
-// 2. Append raw bytes and check size / data
+// 2. 追加原始字节并检查大小 / 数据
 // =============================================================================
 XNET_TEST(AppendBytes) {
   Buffer buf;
@@ -64,7 +64,7 @@ XNET_TEST(AppendBytes) {
   XNET_ASSERT(buf.data() != nullptr);
   XNET_ASSERT(std::memcmp(buf.data(), hello, 14) == 0);
 
-  // Append more bytes to an already-populated buffer
+  // 向已有数据的缓冲区追加更多字节
   const char more[] = " More data.";
   buf.append(more, 10);
   XNET_ASSERT(buf.size() == 24);
@@ -72,7 +72,7 @@ XNET_TEST(AppendBytes) {
 }
 
 // =============================================================================
-// 3. Append a single character
+// 3. 追加单个字符
 // =============================================================================
 XNET_TEST(AppendChar) {
   Buffer buf;
@@ -90,34 +90,34 @@ XNET_TEST(AppendChar) {
 }
 
 // =============================================================================
-// 4. pop_front — remove bytes from the front
+// 4. pop_front — 从头部移除字节
 // =============================================================================
 XNET_TEST(PopFront) {
   Buffer buf;
   const char data[] = "ABCDEFGHIJ";
   buf.append(data, 10);
 
-  // pop_front with n == 0 — no change
+  // pop_front 时 n == 0 — 无变化
   buf.pop_front(0);
   XNET_ASSERT(buf.size() == 10);
 
-  // pop_front partial
+  // 部分 pop_front
   buf.pop_front(3);
   XNET_ASSERT(buf.size() == 7);
   XNET_ASSERT(std::memcmp(buf.data(), "DEFGHIJ", 7) == 0);
 
-  // pop_front all remaining
+  // 移除所有剩余数据
   buf.pop_front(7);
   XNET_ASSERT(buf.size() == 0);
   XNET_ASSERT(buf.empty() == true);
 
-  // pop_front past end — stays at 0
+  // 超出末尾的 pop_front — 保持在 0
   buf.pop_front(100);
   XNET_ASSERT(buf.size() == 0);
 }
 
 // =============================================================================
-// 5. reserve and capacity
+// 5. reserve 和 capacity
 // =============================================================================
 XNET_TEST(ReserveAndCapacity) {
   Buffer buf;
@@ -125,19 +125,19 @@ XNET_TEST(ReserveAndCapacity) {
   XNET_ASSERT(buf.capacity() == 0);
 
   buf.reserve(64);
-  XNET_ASSERT(buf.capacity() >= 64);   // exact value is implementation-defined
+  XNET_ASSERT(buf.capacity() >= 64);   // 具体值由实现定义
   XNET_ASSERT(buf.data() != nullptr);
-  XNET_ASSERT(buf.size() == 0);        // size unchanged
+  XNET_ASSERT(buf.size() == 0);        // 大小不变
 
-  // reserve a smaller capacity is a no-op
+  // reserve 更小的容量是空操作
   buf.reserve(32);
-  XNET_ASSERT(buf.capacity() >= 64);   // unchanged
+  XNET_ASSERT(buf.capacity() >= 64);   // 不变
 
-  // larger reserve actually grows
+  // 更大的 reserve 会实际扩容
   buf.reserve(128);
   XNET_ASSERT(buf.capacity() >= 128);
 
-  // After reserve, we can still append normally
+  // reserve 之后，仍可正常追加数据
   buf.append("hello", 5);
   XNET_ASSERT(buf.size() == 5);
   XNET_ASSERT(std::memcmp(buf.data(), "hello", 5) == 0);
@@ -149,7 +149,7 @@ XNET_TEST(ReserveAndCapacity) {
 XNET_TEST(Resize) {
   Buffer buf;
 
-  // resize larger from empty — zero-filled
+  // 从空缓冲区 resize 扩大 — 零填充
   buf.resize(10);
   XNET_ASSERT(buf.size() == 10);
   XNET_ASSERT(buf.capacity() >= 10);
@@ -157,15 +157,15 @@ XNET_TEST(Resize) {
     XNET_ASSERT(buf.data()[i] == 0);
   }
 
-  // fill some data
+  // 填充一些数据
   std::memcpy(buf.data(), "ABCDE", 5);
 
-  // Shrink — first 3 bytes preserved
+  // 缩小 — 前 3 个字节保留
   buf.resize(3);
   XNET_ASSERT(buf.size() == 3);
   XNET_ASSERT(std::memcmp(buf.data(), "ABC", 3) == 0);
 
-  // Grow again — new bytes are zero-filled, old bytes preserved
+  // 再次扩大 — 新字节零填充，旧字节保留
   buf.resize(8);
   XNET_ASSERT(buf.size() == 8);
   XNET_ASSERT(std::memcmp(buf.data(), "ABC", 3) == 0);
@@ -193,7 +193,7 @@ XNET_TEST(Swap) {
   XNET_ASSERT(buf_b.size() == 4);
   XNET_ASSERT(std::memcmp(buf_b.data(), "AAAA", 4) == 0);
 
-  // Swap with empty buffer
+  // 与空缓冲区交换
   Buffer buf_c;
   buf_a.swap(buf_c);
 
@@ -204,44 +204,44 @@ XNET_TEST(Swap) {
 }
 
 // =============================================================================
-// 8. find substring in buffer
+// 8. 在缓冲区中查找子串
 // =============================================================================
 XNET_TEST(FindSubstring) {
   Buffer buf;
   const char data[] = "The quick brown fox jumps over the lazy dog.";
   buf.append(data, std::strlen(data));
 
-  // substring present at start
+  // 子串出现在开头
   size_t pos = buf.find("The", 3);
   XNET_ASSERT(pos == 0);
 
-  // substring in the middle
+  // 子串在中间
   pos = buf.find("fox", 3);
   XNET_ASSERT(pos == 16);
 
-  // substring near the end
+  // 子串靠近末尾
   pos = buf.find("dog", 3);
   XNET_ASSERT(pos == 40);
 
-  // substring not found
+  // 子串未找到
   pos = buf.find("cat", 3);
   XNET_ASSERT(pos == Buffer::npos);
 
-  // empty needle returns 0
+  // 空 needle 返回 0
   pos = buf.find("", 0);
   XNET_ASSERT(pos == 0);
 
-  // needle longer than buffer
+  // needle 长于缓冲区
   pos = buf.find("The quick brown fox jumps over the lazy dog. Extra", 49);
   XNET_ASSERT(pos == Buffer::npos);
 
-  // single character find
+  // 查找单个字符
   pos = buf.find("q", 1);
   XNET_ASSERT(pos == 4);
 }
 
 // =============================================================================
-// 9. clear resets to empty
+// 9. clear 重置为空
 // =============================================================================
 XNET_TEST(ClearResetsToEmpty) {
   Buffer buf;
@@ -255,21 +255,20 @@ XNET_TEST(ClearResetsToEmpty) {
   XNET_ASSERT(buf.size() == 0);
   XNET_ASSERT(buf.empty() == true);
 
-  // Data pointer should be preserved (memory not freed), but we don't
-  // dereference cleared bytes.
-  // After clear, we can append again as if fresh.
+  // 数据指针应保留（内存不释放），但我们不解引用已清除的字节。
+  // clear 之后，可以像新缓冲区一样再次追加数据。
   buf.append("New data", 8);
   XNET_ASSERT(buf.size() == 8);
   XNET_ASSERT(std::memcmp(buf.data(), "New data", 8) == 0);
 }
 
 // =============================================================================
-// 10. Multiple appends — sequential append operations compound correctly
+// 10. 多次追加 — 顺序追加操作正确复合
 // =============================================================================
 XNET_TEST(MultipleAppends) {
   Buffer buf;
 
-  // Append in small pieces
+  // 分批追加小数据块
   buf.append("A", 1);
   buf.append("BB", 2);
   buf.append("CCC", 3);
@@ -280,11 +279,11 @@ XNET_TEST(MultipleAppends) {
   XNET_ASSERT(buf.size() == 1 + 2 + 3 + 4 + 1 + 5);
   XNET_ASSERT(buf.size() == 16);
 
-  // Verify the exact content
+  // 验证精确内容
   const char expected[] = "ABBCCCDDDDEFFFFF";
   XNET_ASSERT(std::memcmp(buf.data(), expected, 16) == 0);
 
-  // Verify individual positions
+  // 验证各个位置的字符
   XNET_ASSERT(buf.data()[0] == 'A');
   XNET_ASSERT(buf.data()[3] == 'C');   // index 3 = start of "CCC"
   XNET_ASSERT(buf.data()[6] == 'D');   // index 6 = start of "DDDD"
@@ -293,7 +292,7 @@ XNET_TEST(MultipleAppends) {
 }
 
 // =============================================================================
-// Main — run all registered tests
+// 主函数 — 运行所有已注册的测试
 // =============================================================================
 int main() {
   XNET_RUN_TEST(DefaultConstruction);

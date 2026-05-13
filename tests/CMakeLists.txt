@@ -3,8 +3,8 @@
 # Each test is a standalone executable.  Tests use a minimal custom
 # test framework (test_helpers.h) — no external test library needed.
 
-# Discover all test_*.cpp files
-file(GLOB XNET_TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/test_*.cpp")
+# 自动发现所有 test_*.cc 测试文件
+file(GLOB XNET_TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/test_*.cc")
 
 foreach(TEST_SOURCE ${XNET_TEST_SOURCES})
   get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)

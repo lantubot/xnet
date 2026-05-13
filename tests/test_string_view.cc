@@ -18,18 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Unit tests for xnet::StringView.
+// xnet::StringView 的单元测试。
 //
-// Test cases:
-//  1. Default construction (empty, size=0)
-//  2. From const char*
-//  3. From (ptr, len)
-//  4. Comparison (==, !=)
+// 测试用例：
+//  1. 默认构造（empty, size=0）
+//  2. 从 const char* 构造
+//  3. 从 (ptr, len) 构造
+//  4. 比较（==, !=）
 //  5. starts_with
-//  6. find substring and char
+//  6. 查找子串和字符
 //  7. substr
-//  8. to_int (basic parsing)
-//  9. empty() on default and non-empty
+//  8. to_int（基本解析）
+//  9. default 构造和非空视图的 empty()
 
 #include "test_helpers.h"
 #include "xnet/string_view.h"
@@ -38,7 +38,7 @@
 #include <cstddef>  // size_t
 
 // =========================================================================
-// 1. Default construction
+// 1. 默认构造
 // =========================================================================
 
 XNET_TEST(DefaultConstruction) {
@@ -51,7 +51,7 @@ XNET_TEST(DefaultConstruction) {
 }
 
 // =========================================================================
-// 2. From const char*
+// 2. 从 const char* 构造
 // =========================================================================
 
 XNET_TEST(FromConstCharPtr) {
@@ -64,7 +64,7 @@ XNET_TEST(FromConstCharPtr) {
   XNET_ASSERT(sv.empty() == false);
   XNET_ASSERT(sv == xnet::StringView("hello"));
 
-  // Nullptr should behave like default construction.
+  // Nullptr 应表现得像默认构造一样。
   xnet::StringView sv_null(nullptr);
   XNET_ASSERT(sv_null.data() == nullptr);
   XNET_ASSERT(sv_null.size() == 0);
@@ -72,7 +72,7 @@ XNET_TEST(FromConstCharPtr) {
 }
 
 // =========================================================================
-// 3. From (ptr, len)
+// 3. 从 (ptr, len) 构造
 // =========================================================================
 
 XNET_TEST(FromPtrLen) {
@@ -83,36 +83,36 @@ XNET_TEST(FromPtrLen) {
   XNET_ASSERT(sv.size() == 5);
   XNET_ASSERT(sv == xnet::StringView("hello"));
 
-  // Zero-length view.
+  // 零长度视图。
   xnet::StringView empty_sv(text, 0);
   XNET_ASSERT(empty_sv.size() == 0);
   XNET_ASSERT(empty_sv.empty() == true);
 }
 
 // =========================================================================
-// 4. Comparison (==, !=)
+// 4. 比较（==, !=）
 // =========================================================================
 
 XNET_TEST(Comparison) {
   constexpr xnet::StringView a("abc");
   constexpr xnet::StringView b("abc");
   constexpr xnet::StringView c("xyz");
-  constexpr xnet::StringView d("ab");   // shorter
-  constexpr xnet::StringView e("abcd"); // longer
+  constexpr xnet::StringView d("ab");   // 较短
+  constexpr xnet::StringView e("abcd"); // 较长
   xnet::StringView empty;
 
-  // Equality
+  // 相等性
   XNET_ASSERT(a == b);
   XNET_ASSERT(b == a);
-  XNET_ASSERT(empty == xnet::StringView());  // both default
+  XNET_ASSERT(empty == xnet::StringView());  // 两者都是默认构造
 
-  // Inequality
+  // 不相等性
   XNET_ASSERT(a != c);
   XNET_ASSERT(a != d);
   XNET_ASSERT(a != e);
   XNET_ASSERT(empty != a);
 
-  // Self-comparison
+  // 自比较
   XNET_ASSERT(a == a);
 }
 
@@ -123,79 +123,79 @@ XNET_TEST(Comparison) {
 XNET_TEST(StartsWith) {
   xnet::StringView sv("hello world");
 
-  // Exact prefix match.
+  // 精确前缀匹配。
   XNET_ASSERT(sv.starts_with("hello") == true);
 
-  // Full string as prefix.
+  // 完整字符串作为前缀。
   XNET_ASSERT(sv.starts_with("hello world") == true);
 
-  // Non-matching prefix.
+  // 不匹配的前缀。
   XNET_ASSERT(sv.starts_with("world") == false);
 
-  // Prefix longer than view.
+  // 前缀比视图长。
   XNET_ASSERT(sv.starts_with("hello world!!!") == false);
 
-  // Empty prefix on non-empty view.
+  // 非空视图的空前缀。
   XNET_ASSERT(sv.starts_with("") == true);
 
-  // Empty prefix on empty view.
+  // 空视图的空前缀。
   xnet::StringView empty;
   XNET_ASSERT(empty.starts_with("") == true);
 
-  // Nullptr prefix on empty view.
+  // 空视图的 nullptr 前缀。
   XNET_ASSERT(empty.starts_with(nullptr) == true);
 
-  // Nullptr prefix on non-empty view.
+  // 非空视图的 nullptr 前缀。
   XNET_ASSERT(sv.starts_with(nullptr) == false);
 }
 
 // =========================================================================
-// 6. find substring and char
+// 6. 查找子串和字符
 // =========================================================================
 
 XNET_TEST(FindSubstring) {
   xnet::StringView sv("hello world, hello");
 
-  // Normal substring find.
+  // 正常查找子串。
   XNET_ASSERT(sv.find("world") == 6);
 
-  // Find at start.
+  // 在开头查找。
   XNET_ASSERT(sv.find("hello") == 0);
 
-  // Find from position — should skip first match.
+  // 从指定位置开始查找——应跳过第一个匹配。
   XNET_ASSERT(sv.find("hello", 1) == 13);
 
-  // Not found.
+  // 未找到。
   XNET_ASSERT(sv.find("xyz") == xnet::StringView::npos);
 
-  // Empty needle at start.
+  // 空字符串在开头。
   XNET_ASSERT(sv.find("") == 0);
 
-  // Empty needle past end.
+  // 空字符串越过末尾。
   XNET_ASSERT(sv.find("", sv.size()) == sv.size());
   XNET_ASSERT(sv.find("", sv.size() + 1) == xnet::StringView::npos);
 
-  // Nullptr needle.
+  // nullptr 作为搜索字符串。
   XNET_ASSERT(sv.find(nullptr) == xnet::StringView::npos);
 }
 
 XNET_TEST(FindChar) {
   xnet::StringView sv("hello world");
 
-  // Normal char find.
+  // 正常查找字符。
   XNET_ASSERT(sv.find('w') == 6);
 
-  // Char at start.
+  // 字符在开头。
   XNET_ASSERT(sv.find('h') == 0);
 
-  // Char not found.
+  // 未找到字符。
   XNET_ASSERT(sv.find('z') == xnet::StringView::npos);
 
-  // Find from position.
+  // 从指定位置开始查找。
   XNET_ASSERT(sv.find('o') == 4);
   XNET_ASSERT(sv.find('o', 5) == 7);
 
-  // Empty view.
+  // 空视图。
   xnet::StringView empty;
   XNET_ASSERT(empty.find('a') == xnet::StringView::npos);
 }
@@ -207,101 +207,101 @@ XNET_TEST(FindChar) {
 XNET_TEST(Substr) {
   xnet::StringView sv("hello world");
 
-  // Normal substring.
+  // 正常子串。
   xnet::StringView sub = sv.substr(0, 5);
   XNET_ASSERT(sub == xnet::StringView("hello"));
 
-  // Middle substring.
+  // 中间子串。
   sub = sv.substr(6, 5);
   XNET_ASSERT(sub == xnet::StringView("world"));
 
-  // Substring to end (count = npos).
+  // 子串到末尾（count = npos）。
   sub = sv.substr(6);
   XNET_ASSERT(sub == xnet::StringView("world"));
 
-  // Offset past end → empty.
+  // 偏移量超过末尾 → 空。
   sub = sv.substr(100);
   XNET_ASSERT(sub.empty() == true);
   XNET_ASSERT(sub.size() == 0);
 
-  // Count larger than remaining → truncated.
+  // 计数大于剩余长度 → 截断。
   sub = sv.substr(6, 100);
   XNET_ASSERT(sub == xnet::StringView("world"));
 
-  // Empty view substr.
+  // 空视图子串。
   xnet::StringView empty;
   sub = empty.substr(0);
   XNET_ASSERT(sub.empty() == true);
 }
 
 // =========================================================================
-// 8. to_int (basic parsing)
+// 8. to_int（基本解析）
 // =========================================================================
 
 XNET_TEST(ToInt) {
-  // Basic positive.
+  // 基本正数测试。
   XNET_ASSERT(xnet::StringView("0").to_int() == 0);
   XNET_ASSERT(xnet::StringView("123").to_int() == 123);
   XNET_ASSERT(xnet::StringView("999").to_int() == 999);
 
-  // Negative.
+  // 负数。
   XNET_ASSERT(xnet::StringView("-123").to_int() == -123);
 
-  // Leading '+' sign.
+  // 前导 '+' 符号。
   XNET_ASSERT(xnet::StringView("+5").to_int() == 5);
 
-  // Edge: only sign, no digits.
+  // 边界：只有符号，没有数字。
   XNET_ASSERT(xnet::StringView("-").to_int() == 0);
   XNET_ASSERT(xnet::StringView("+").to_int() == 0);
 
-  // Edge: empty.
+  // 边界：空字符串。
   XNET_ASSERT(xnet::StringView().to_int() == 0);
   XNET_ASSERT(xnet::StringView("").to_int() == 0);
 
-  // Malformed (non-digit).
+  // 格式错误（非数字）。
   XNET_ASSERT(xnet::StringView("abc").to_int() == 0);
   XNET_ASSERT(xnet::StringView("12a34").to_int() == 0);
 
-  // Overflow — should clamp.
+  // 溢出——应钳制到上限。
   XNET_ASSERT(xnet::StringView("2147483647").to_int() == INT_MAX);
   XNET_ASSERT(xnet::StringView("2147483648").to_int() == INT_MAX);
   XNET_ASSERT(xnet::StringView("9999999999").to_int() == INT_MAX);
 
-  // Underflow — should clamp.
+  // 下溢——应钳制到下限。
   XNET_ASSERT(xnet::StringView("-2147483648").to_int() == INT_MIN);
   XNET_ASSERT(xnet::StringView("-2147483649").to_int() == INT_MIN);
   XNET_ASSERT(xnet::StringView("-9999999999").to_int() == INT_MIN);
 }
 
 // =========================================================================
-// 9. empty() on default and non-empty
+// 9. 默认构造和非空视图的 empty()
 // =========================================================================
 
 XNET_TEST(Empty) {
-  // Default constructed.
+  // 默认构造。
   xnet::StringView default_sv;
   XNET_ASSERT(default_sv.empty() == true);
 
-  // From nullptr.
+  // 从 nullptr 构造。
   xnet::StringView null_sv(nullptr);
   XNET_ASSERT(null_sv.empty() == true);
 
-  // From (nullptr, 0).
+  // 从 (nullptr, 0) 构造。
   xnet::StringView ptr_len_empty(nullptr, 0);
   XNET_ASSERT(ptr_len_empty.empty() == true);
 
-  // Non-empty view.
+  // 非空视图。
   xnet::StringView nonempty("hello");
   XNET_ASSERT(nonempty.empty() == false);
 
-  // From (ptr, 0).
+  // 从 (ptr, 0) 构造。
   const char* text = "hello";
   xnet::StringView explicit_empty(text, 0);
   XNET_ASSERT(explicit_empty.empty() == true);
 }
 
 // =========================================================================
-// main
+// 主函数
 // =========================================================================
 
 int main() {

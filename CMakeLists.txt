@@ -48,11 +48,11 @@ endif()
 
 # ── Sources ──────────────────────────────────────────────────────────
 set(XNET_SOURCES
-    src/url.cpp
-    src/buffer.cpp
-    src/http.cpp
-    src/request.cpp
-    src/socket_common.cpp
+    src/url.cc
+    src/buffer.cc
+    src/http.cc
+    src/request.cc
+    src/socket_common.cc
 )
 
 set(XNET_PUBLIC_HEADERS
@@ -68,11 +68,11 @@ set(XNET_PUBLIC_HEADERS
 
 # ── Platform Sources ─────────────────────────────────────────────────
 if(XNET_PLATFORM_LINUX)
-    list(APPEND XNET_SOURCES ports/linux/socket_linux.cpp)
+    list(APPEND XNET_SOURCES ports/linux/socket_linux.cc)
 elseif(XNET_PLATFORM_WINDOWS)
-    list(APPEND XNET_SOURCES ports/windows/socket_windows.cpp)
+    list(APPEND XNET_SOURCES ports/windows/socket_windows.cc)
 elseif(XNET_PLATFORM_ESP32)
-    list(APPEND XNET_SOURCES ports/esp32/socket_esp32.cpp)
+    list(APPEND XNET_SOURCES ports/esp32/socket_esp32.cc)
 endif()
 
 # ── Library ──────────────────────────────────────────────────────────
@@ -92,7 +92,7 @@ endif()
 
 # ── Examples ─────────────────────────────────────────────────────────
 if(XNET_BUILD_EXAMPLES)
-    add_executable(xnet_http_get examples/http_get.cpp)
+    add_executable(xnet_http_get examples/http_get.cc)
     target_link_libraries(xnet_http_get PRIVATE xnet)
 endif()
 

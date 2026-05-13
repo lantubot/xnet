@@ -1,6 +1,6 @@
-// XNet test helpers — minimal test framework (no STL, no exceptions)
+// XNet 测试辅助工具 — 最小化测试框架（无 STL，无异常）
 //
-// Usage:
+// 用法：
 //   XNET_TEST(test_name) {
 //     XNET_ASSERT(1 + 1 == 2);
 //     XNET_ASSERT_STR_EQ("hello", "hello");
@@ -17,7 +17,7 @@
 namespace xnet {
 namespace test {
 
-// Test state
+// 测试状态
 inline int g_tests_passed = 0;
 inline int g_tests_failed = 0;
 inline const char* g_current_test = "";

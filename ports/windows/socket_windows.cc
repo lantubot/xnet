@@ -18,26 +18,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Implementation of WinTcpSocket and SocketFactory::create() for Windows.
+// Windows 平台 WinTcpSocket 和 SocketFactory::create() 的实现
 //
-// Uses Winsock2 for all socket operations.  Connect-timeout is implemented
-// via non-blocking connect() + select().  Recv-timeout uses select() on
-// the read fd_set.  Send uses a partial-write loop until all bytes are
-// transmitted or an error occurs.
+// 所有套接字操作均使用 Winsock2。连接超时通过非阻塞 connect() + select() 实现。
+// 接收超时使用 select() 在读取 fd_set 上实现。
+// 发送使用部分写入循环，直到所有字节发送完毕或发生错误。
 
 #include "socket_windows.h"
 
-#include <cstring>  // memset
+#include <cstring>  // memset（内存操作）
 
 namespace xnet {
 
 // ============================================================================
-// WSAStartup management
+// WSAStartup 管理
 // ============================================================================
-// Track whether WSAStartup has been called successfully.  A static flag is
-// sufficient for single-threaded usage; multi-threaded callers should ensure
-// WSAStartup is called before first use.  We use an InterlockedExchange on
-// a LONG to provide basic thread safety without STL atomics.
+// 记录 WSAStartup 是否已成功调用。对于单线程使用，静态标志足够；
+// 多线程调用者应确保在使用前调用 WSAStartup。
+// 我们使用 InterlockedExchange 操作一个 LONG 类型以提供基本的线程安全，无需 STL 原子操作。
 
 static LONG g_wsa_started = 0;
 
@@ -57,21 +55,21 @@ static Status EnsureWsaStarted() {
 }
 
 // ============================================================================
-// WinTcpSocket construction / destruction
+// WinTcpSocket 构造 / 析构
 // ============================================================================
 
 WinTcpSocket::WinTcpSocket() : fd_(INVALID_SOCKET) {}
 
 WinTcpSocket::~WinTcpSocket() {
-  // close() is idempotent per the Socket contract.
+  // 按照 Socket 契约，close() 是幂等的
   (void)close();
 }
 
 // ============================================================================
-// WSA error -> xnet Status mapping
+// WSA 错误码 -> xnet 状态码映射
 // ============================================================================
 
-// static
+// 静态方法
 Status WinTcpSocket::wsa_error_to_status(int wsa_err) {
   switch (wsa_err) {
     case WSAETIMEDOUT:
@@ -101,13 +99,13 @@ Status WinTcpSocket::wsa_error_to_status(int wsa_err) {
 }
 
 // ============================================================================
-// Port-to-string helper (no STL)
+// 端口转字符串辅助函数（无 STL）
 // ============================================================================
-// Writes the decimal representation of |port| into |buf| (which must be at
-// least 6 bytes).  Returns a pointer into |buf| (skipping leading zeros).
+// 将 |port| 的十进制表示写入 |buf|（至少 6 字节）。
+// 返回指向 |buf| 的指针（跳过前导零）。
 static const char* PortToString(int port, char* buf, size_t buf_size) {
   (void)buf_size;
-  // Write digits in reverse.
+  // 反向写入数字
   char tmp[6];  // max "65535\0" = 6 chars
   size_t idx = 0;
   if (port == 0) {

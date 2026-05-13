@@ -1,4 +1,4 @@
-// XNet example: HTTP GET request
+// XNet 示例：HTTP GET 请求
 
 #include "xnet/xnet.h"
 #include <cstdio>
@@ -21,11 +21,11 @@ static void print_response(const xnet::Result<xnet::Response>& result,
 }
 
 int main() {
-  // --- Simple GET ---
+  // --- 简单 GET ---
   xnet::Result<xnet::Response> result = xnet::get("http://httpbin.org/get");
   print_response(result, "Simple GET");
 
-  // --- Configured POST ---
+  // --- 配置 POST ---
   xnet::Request req;
   const char* json = R"({"hello": "xnet"})";
 

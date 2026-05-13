@@ -9,7 +9,7 @@
 
 namespace xnet {
 
-// Minimal move helper (no STL dependency)
+// 极简移动辅助（无 STL 依赖）
 template <typename T>
 struct RemoveReference { using type = T; };
 template <typename T>
@@ -23,7 +23,7 @@ typename RemoveReference<T>::type&& move(T&& t) noexcept {
 }
 
 // ============================================================================
-// Status — error code enum
+// Status — 错误码枚举
 // ============================================================================
 enum class Status : uint8_t {
   OK                  = 0,
@@ -42,9 +42,9 @@ enum class Status : uint8_t {
 };
 
 // ============================================================================
-// to_string — human-readable name for a Status
+// to_string — Status 的可读名称
 // ============================================================================
-inline const char* to_string(Status s) {
+constexpr inline const char* to_string(Status s) {
   switch (s) {
     case Status::OK:                 return "OK";
     case Status::UNKNOWN:            return "UNKNOWN";
@@ -64,11 +64,11 @@ inline const char* to_string(Status s) {
 }
 
 // ============================================================================
-// Error — status code plus optional descriptive message
+// Error — 状态码 + 可选的描述信息
 // ============================================================================
 struct Error {
   Status      code;
-  const char* message;   // optional — may be nullptr
+  const char* message;   // 可选 —— 可为 nullptr
 
   explicit Error(Status c, const char* m = nullptr)
     : code(c), message(m) {}
@@ -77,17 +77,17 @@ struct Error {
 };
 
 // ============================================================================
-// Result<T> — tagged union of T (success) or Error (failure)
+// Result<T> — T（成功）或 Error（失败）的标签联合
 // ============================================================================
 template <typename T>
 class Result {
  public:
-  // --- static factories -----------------------------------------------------
+  // --- 静态工厂 -------------------------------------------------------------
   static Result ok(const T& val) { return Result(val); }
   static Result ok(T&& val) { return Result(move(val)); }
   static Result err(const Error& e) { return Result(e); }
 
-  // --- constructors ---------------------------------------------------------
+  // --- 构造函数 -------------------------------------------------------------
   Result(const Result& other) : is_ok_(other.is_ok_) {
     if (is_ok_) {
       construct_value(other.storage_.value_);
@@ -132,11 +132,11 @@ class Result {
     return *this;
   }
 
-  // --- queries --------------------------------------------------------------
+  // --- 查询 -----------------------------------------------------------------
   bool is_ok() const { return is_ok_; }
   bool is_err() const { return !is_ok_; }
 
-  // --- accessors ------------------------------------------------------------
+  // --- 访问器 ---------------------------------------------------------------
   T& value() {
     assert(is_ok_);
     return storage_.value_;
@@ -158,18 +158,18 @@ class Result {
   }
 
  private:
-  // --- tagged storage -------------------------------------------------------
+  // --- 标签联合存储 ---------------------------------------------------------
   union Storage {
     T     value_;
     Error error_;
 
-    Storage() {}  // no default initialization
-    ~Storage() {} // managed externally
+    Storage() {}  // 不进行默认初始化
+    ~Storage() {} // 由外部管理生命周期
   } storage_;
 
   bool is_ok_;
 
-  // --- private constructors (used by factories) -----------------------------
+  // --- 私有构造函数（由工厂方法使用）----------------------------------------
   explicit Result(const T& val) : is_ok_(true) {
     construct_value(val);
   }
@@ -182,7 +182,7 @@ class Result {
     construct_error(e);
   }
 
-  // --- helpers --------------------------------------------------------------
+  // --- 辅助函数 -------------------------------------------------------------
   void construct_value(const T& val) {
     ::new (static_cast<void*>(&storage_.value_)) T(val);
   }
@@ -211,7 +211,6 @@ class Result {
 }  // namespace xnet
 
 // ============================================================================
-// XNET_UNUSED — suppress unused variable warnings
+// XNET_UNUSED — 抑制未使用变量的警告
 // ============================================================================
 #define XNET_UNUSED(x) (void)(x)
-

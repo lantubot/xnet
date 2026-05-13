@@ -36,15 +36,14 @@
 namespace xnet {
 
 // ============================================================================
-// Response — holds the result of a completed HTTP request.
+// Response — 存储一次完成的 HTTP 请求的结果。
 //
-// Owns a Buffer that backs both the parsed header storage and the response
-// body.  Provides high-level accessors for status code, body content, and
-// header lookup.
+// 拥有一个 Buffer，它同时作为解析后的头部存储和响应体的后备存储。
+// 提供状态码、响应体内容和头部查找的高级访问器。
 // ============================================================================
 struct Response {
   // --------------------------------------------------------------------------
-  // Construction
+  // 构造
   // --------------------------------------------------------------------------
   Response() : status_code_(0), version_(Version::HTTP_1_1), num_headers_(0) {
     for (size_t i = 0; i < HttpResponse::kMaxHeaders; ++i) {
@@ -54,28 +53,27 @@ struct Response {
   }
 
   // --------------------------------------------------------------------------
-  // Accessors
+  // 访问器
   // --------------------------------------------------------------------------
 
-  // Returns the HTTP status code (e.g. 200, 404, 500).
-  int status_code() const { return status_code_; }
+  // 返回 HTTP 状态码（如 200、404、500）。
+  constexpr int status_code() const { return status_code_; }
 
-  // Returns a pointer to the response body data.  May be nullptr if the
-  // response has no body.  The returned pointer is valid for the lifetime
-  // of this Response object.
-  const char* body() const {
+  // 返回响应体数据的指针。如果响应没有 body，则返回 nullptr。
+  // 返回的指针在 Response 对象的生命周期内有效。
+  inline const char* body() const {
     return body_.empty() ? nullptr : body_.data();
   }
 
-  // Returns the size of the response body in bytes.
-  size_t body_size() const { return body_.size(); }
+  // 返回响应体的大小（字节数）。
+  inline size_t body_size() const { return body_.size(); }
 
-  // Returns the HTTP version of the response.
-  Version version() const { return version_; }
+  // 返回响应的 HTTP 版本。
+  constexpr Version version() const { return version_; }
 
-  // Finds a header by |name| (case-insensitive comparison).
-  // Returns the header value, or nullptr if no matching header is found.
-  // The returned pointer is valid for the lifetime of this Response object.
+  // 按名称查找头部（不区分大小写）。
+  // 返回头部值，如果找不到匹配的头部则返回 nullptr。
+  // 返回的指针在 Response 对象的生命周期内有效。
   const char* header(const char* name) const {
     if (name == nullptr) return nullptr;
 
@@ -83,43 +81,41 @@ struct Response {
     for (size_t i = 0; i < num_headers_; ++i) {
       if (headers_[i].name.size() == name_len &&
           CaselessCompare(headers_[i].name.data(), name, name_len)) {
-        // Return value as a null-terminated string.  During parsing, headers
-        // are stored with a trailing '\0' in |storage_|, so the StringView
-        // data is already null-terminated.
+        // 返回以 null 结尾的值字符串。解析时，头部在 |storage_| 中
+        // 以末尾 '\0' 存储，因此 StringView 的数据已经是 null 结尾的。
         return headers_[i].value.data();
       }
     }
     return nullptr;
   }
 
-  // Returns the number of headers in the response.
-  size_t num_headers() const { return num_headers_; }
+  // 返回响应中的头部数量。
+  constexpr size_t num_headers() const { return num_headers_; }
 
-  // Returns the header at index |i|.  Behaviour is undefined if |i| >=
-  // num_headers().
-  const Header& header_at(size_t i) const {
+  // 返回索引 |i| 处的头部。如果 |i| >= num_headers()，则行为未定义。
+  constexpr const Header& header_at(size_t i) const {
     return headers_[i];
   }
 
  private:
-  friend class Request;  // Request builds Responses.
+  friend class Request;  // Request 构建 Response
 
   int       status_code_;
   Version   version_;
   Header    headers_[HttpResponse::kMaxHeaders];
   size_t    num_headers_;
-  Buffer    storage_;   // Backing store for header name/value StringViews.
-  Buffer    body_;      // Owned response body.
+  Buffer    storage_;   // 头部名称/值 StringView 的后备存储
+  Buffer    body_;      // 拥有的响应体
 
   // --------------------------------------------------------------------------
-  // Case-insensitive comparison of two ASCII strings of equal length.
+  // 对两个等长 ASCII 字符串进行不区分大小写的比较。
   // --------------------------------------------------------------------------
-  static bool CaselessCompare(const char* a, const char* b, size_t len) {
+  static constexpr bool CaselessCompare(const char* a, const char* b,
+                                        size_t len) {
     for (size_t i = 0; i < len; ++i) {
       char ca = a[i];
       char cb = b[i];
       if (ca == cb) continue;
-      // Fold [A-Z] to [a-z].
       if (ca >= 'A' && ca <= 'Z') ca = static_cast<char>(ca + 32);
       if (cb >= 'A' && cb <= 'Z') cb = static_cast<char>(cb + 32);
       if (ca != cb) return false;
@@ -129,9 +125,9 @@ struct Response {
 };
 
 // ============================================================================
-// Request — builder-pattern HTTP request.
+// Request — 构建器模式的 HTTP 请求。
 //
-// Example usage:
+// 使用示例：
 //   Result<Response> r = xnet::Request()
 //       .url("https://api.example.com/data")
 //       .method(Method::POST)
@@ -142,11 +138,11 @@ struct Response {
 // ============================================================================
 class Request {
  public:
-  // Default timeout in milliseconds.
+  // 默认超时时间（毫秒）。
   static constexpr int kDefaultTimeoutMs = 30000;
 
   // --------------------------------------------------------------------------
-  // Constructor
+  // 构造
   // --------------------------------------------------------------------------
   Request()
       : method_(Method::GET),
@@ -154,28 +150,27 @@ class Request {
         num_headers_(0) {}
 
   // --------------------------------------------------------------------------
-  // Builder methods (fluent)
+  // 构建器方法（流式接口）
   // --------------------------------------------------------------------------
 
-  // Sets the request URL.  The string is copied internally so it does not
-  // need to outlive the builder.
+  // 设置请求 URL。字符串在内部拷贝，因此不需要在构建器之外保持有效。
   Request& url(const char* url) {
     if (url != nullptr) {
       url_.clear();
       url_.append(url, std::strlen(url));
-      url_.append('\0');  // null-terminate for convenience
+      url_.append('\0');  // 为方便使用添加 null 终止
     }
     return *this;
   }
 
-  // Sets the HTTP method.
+  // 设置 HTTP 方法。
   Request& method(Method m) {
     method_ = m;
     return *this;
   }
 
-  // Adds a header.  Both |name| and |value| are copied internally.
-  // Returns a reference to this Request for chaining.
+  // 添加一个头部。|name| 和 |value| 均在内部拷贝。
+  // 返回 Request 引用以支持链式调用。
   Request& header(const char* name, const char* value) {
     if (name == nullptr || value == nullptr) return *this;
     if (num_headers_ >= HttpRequest::kMaxHeaders) return *this;
@@ -183,12 +178,12 @@ class Request {
     size_t name_len = std::strlen(name);
     size_t val_len = std::strlen(value);
 
-    // Store the name in header_storage_.
+    // 将 name 存入 header_storage_
     size_t name_off = header_storage_.size();
     header_storage_.append(name, name_len);
     header_storage_.append('\0');
 
-    // Store the value in header_storage_.
+    // 将 value 存入 header_storage_
     size_t val_off = header_storage_.size();
     header_storage_.append(value, val_len);
     header_storage_.append('\0');
@@ -202,8 +197,7 @@ class Request {
     return *this;
   }
 
-  // Sets the request body.  |data| is copied internally so it does not need
-  // to outlive the builder.
+  // 设置请求体。|data| 在内部拷贝，因此不需要在构建器之外保持有效。
   Request& body(const char* data, size_t len) {
     body_.clear();
     if (data != nullptr && len > 0) {
@@ -212,296 +206,61 @@ class Request {
     return *this;
   }
 
-  // Sets the timeout in milliseconds.  Values <= 0 mean no timeout.
+  // 设置超时时间（毫秒）。值 <= 0 表示无超时。
   Request& timeout(int ms) {
     timeout_ms_ = ms;
     return *this;
   }
 
   // --------------------------------------------------------------------------
-  // Perform — execute the HTTP request.
+  // Perform — 执行 HTTP 请求。
   //
-  // Parses the URL, connects to the remote server, sends the HTTP request,
-  // receives the response, and returns a Result<Response>.
+  // 解析 URL，连接到远程服务器，发送 HTTP 请求，
+  // 接收响应，并返回 Result<Response>。
   //
-  // On failure returns an Error describing the problem (DNS failure,
-  // connection refused, timeout, protocol error, etc.).
+  // 失败时返回描述问题的 Error（DNS 解析失败、
+  // 连接被拒绝、超时、协议错误等）。
   // --------------------------------------------------------------------------
-  Result<Response> perform() {
-    // --- 1. Parse the URL ---------------------------------------------------
-    if (url_.empty()) {
-      return Result<Response>::err(
-          Error(Status::INVALID_ARGUMENT, "request URL is not set"));
-    }
-
-    Result<Url> url_result = Url::parse(url_.data(), url_.size() - 1);  // -1 for \0
-    if (url_result.is_err()) {
-      return Result<Response>::err(url_result.error());
-    }
-
-    const Url& target = url_result.value();
-
-    // --- 2. Determine host and port -----------------------------------------
-    if (target.host.empty()) {
-      return Result<Response>::err(
-          Error(Status::INVALID_ARGUMENT, "URL has no host"));
-    }
-
-    // Determine default port based on scheme.
-    int port = target.port;
-    if (port == 0) {
-      if (target.scheme == StringView("https")) {
-        port = 443;
-      } else {
-        port = 80;  // default for http and everything else
-      }
-    }
-
-    // Build a null-terminated host string.
-    host_.clear();
-    host_.append(target.host.data(), target.host.size());
-    host_.append('\0');
-
-    // Build the request path (default to "/" if empty).
-    path_.clear();
-    if (!target.path.empty()) {
-      path_.append(target.path.data(), target.path.size());
-    } else {
-      char slash = '/';
-      path_.append(&slash, 1);
-    }
-    if (!target.query.empty()) {
-      path_.append('?');
-      path_.append(target.query.data(), target.query.size());
-    }
-    // Add null terminator for StringView construction below.
-    path_.append('\0');
-
-    // --- 3. Create and connect socket ---------------------------------------
-    Result<Socket*> socket_result = SocketFactory::create(host_.data(), port);
-    if (socket_result.is_err()) {
-      return Result<Response>::err(socket_result.error());
-    }
-    Socket* sock = socket_result.value();
-
-    // Connect with timeout.
-    Status connect_status = sock->connect(host_.data(), port, timeout_ms_);
-    if (connect_status != Status::OK) {
-      SocketFactory::destroy(sock);
-      return Result<Response>::err(
-          Error(connect_status, "failed to connect"));
-    }
-
-    // --- 4. Build the HTTP request ------------------------------------------
-    HttpRequest req;
-    req.method = method_;
-    req.url = StringView(path_.data(), path_.size() - 1);  // exclude \0
-    req.version = Version::HTTP_1_1;
-    req.num_headers = 0;
-    req.body = nullptr;
-
-    // Copy headers from the builder.
-    for (size_t i = 0; i < num_headers_; ++i) {
-      req.headers[req.num_headers++] = headers_[i];
-    }
-
-    // Add Host header if not already present.
-    if (!HasHeader("Host")) {
-      req.headers[req.num_headers].name = StringView("Host", 4);
-      req.headers[req.num_headers].value =
-          StringView(host_.data(), host_.size() - 1);
-      ++req.num_headers;
-    }
-
-    // Add Content-Length header for non-empty body.
-    if (body_.size() > 0 && !HasHeader("Content-Length")) {
-      // We need a small buffer to format the content-length value as decimal.
-      // Use a stack buffer large enough for any 64-bit integer.
-      char cl_buf[32];
-      size_t cl_len = FormatDecimal(cl_buf, sizeof(cl_buf),
-                                    static_cast<unsigned long long>(body_.size()));
-      // Store the formatted string in header_storage_ so it lives long enough.
-      size_t cl_off = header_storage_.size();
-      header_storage_.append(cl_buf, cl_len);
-      header_storage_.append('\0');
-      req.headers[req.num_headers].name = StringView("Content-Length", 14);
-      req.headers[req.num_headers].value =
-          StringView(header_storage_.data() + cl_off, cl_len);
-      ++req.num_headers;
-    }
-
-    // Set body if present.
-    Buffer* body_ptr = nullptr;
-    if (body_.size() > 0) {
-      body_ptr = &body_;
-    }
-    req.body = body_ptr;
-
-    // --- 5. Serialize the request -------------------------------------------
-    Buffer wire_buffer;
-    Status ser_status = req.serialize(wire_buffer);
-    if (ser_status != Status::OK) {
-      SocketFactory::destroy(sock);
-      return Result<Response>::err(
-          Error(ser_status, "failed to serialize request"));
-    }
-
-    // --- 6. Send the request ------------------------------------------------
-    Result<size_t> send_result = sock->send(wire_buffer.data(), wire_buffer.size());
-    if (send_result.is_err()) {
-      SocketFactory::destroy(sock);
-      return Result<Response>::err(send_result.error());
-    }
-
-    // Keep sending until all data is transmitted.
-    size_t total_sent = send_result.value();
-    while (total_sent < wire_buffer.size()) {
-      send_result = sock->send(wire_buffer.data() + total_sent,
-                               wire_buffer.size() - total_sent);
-      if (send_result.is_err()) {
-        SocketFactory::destroy(sock);
-        return Result<Response>::err(send_result.error());
-      }
-      total_sent += send_result.value();
-    }
-
-    // --- 7. Receive the response --------------------------------------------
-    Buffer recv_buf;
-
-    // Accumulate data until the remote end closes the connection or an error
-    // occurs.  A production implementation would parse Content-Length or
-    // Transfer-Encoding: chunked to determine the exact response size, but
-    // for simplicity we read until EOF (common for HTTP/1.0 and many
-    // HTTP/1.1 servers with Connection: close).
-    const size_t kRecvChunkSize = 4096;
-    char chunk[kRecvChunkSize];
-
-    for (;;) {
-      Result<size_t> nread = sock->recv(chunk, kRecvChunkSize);
-      if (nread.is_err()) {
-        SocketFactory::destroy(sock);
-        return Result<Response>::err(nread.error());
-      }
-      if (nread.value() == 0) {
-        // Clean EOF from the server — all data has been received.
-        break;
-      }
-      recv_buf.append(chunk, nread.value());
-    }
-
-    // Close the connection (we've received the response).
-    sock->close();
-    SocketFactory::destroy(sock);
-
-    // --- 8. Parse the response ----------------------------------------------
-    // HttpResponse::parse() needs a separate header storage buffer.
-    Buffer header_storage;
-    Result<HttpResponse> parse_result =
-        HttpResponse::parse(recv_buf.data(), recv_buf.size(), header_storage);
-    if (parse_result.is_err()) {
-      return Result<Response>::err(parse_result.error());
-    }
-
-    // --- 9. Build the Response ----------------------------------------------
-    HttpResponse& http_result = parse_result.value();
-    Response resp;
-    resp.status_code_ = http_result.status_code;
-    resp.version_ = http_result.version;
-    resp.num_headers_ = http_result.num_headers;
-
-    // Move the header storage so StringViews remain valid.
-    resp.storage_ = static_cast<Buffer&&>(header_storage);
-
-    // Copy header StringViews — they now point into resp.storage_.
-    for (size_t i = 0; i < http_result.num_headers; ++i) {
-      resp.headers_[i] = http_result.headers[i];
-    }
-
-    // Move the response body.
-    resp.body_ = static_cast<Buffer&&>(http_result.body);
-
-    return Result<Response>::ok(static_cast<Response&&>(resp));
-  }
+  Result<Response> perform();
 
  private:
   // --------------------------------------------------------------------------
-  // Member data
+  // 成员数据
   // --------------------------------------------------------------------------
   Method    method_;
-  Buffer    url_;              // Null-terminated URL string.
-  Buffer    host_;             // Null-terminated host string (for Host header).
-  Buffer    path_;             // Null-terminated request path.
+  Buffer    url_;              // 以 null 结尾的 URL 字符串
+  Buffer    host_;             // 以 null 结尾的主机字符串（用于 Host 头部）
+  Buffer    path_;             // 以 null 结尾的请求路径
   int       timeout_ms_;
   Header    headers_[HttpRequest::kMaxHeaders];
   size_t    num_headers_;
-  Buffer    header_storage_;   // Storage for builder header name/value strings.
-  Buffer    body_;             // Request body data.
+  Buffer    header_storage_;   // 构建器头部名称/值字符串的存储
+  Buffer    body_;             // 请求体数据
 
   // --------------------------------------------------------------------------
-  // Check if a header with the given name already exists (case-insensitive).
+  // 检查具有给定名称的头部是否已存在（不区分大小写）。
   // --------------------------------------------------------------------------
-  bool HasHeader(const char* name) const {
-    if (name == nullptr) return false;
-    size_t name_len = std::strlen(name);
-    for (size_t i = 0; i < num_headers_; ++i) {
-      if (headers_[i].name.size() == name_len &&
-          CaselessCompare(headers_[i].name.data(), name, name_len)) {
-        return true;
-      }
-    }
-    return false;
-  }
+  bool HasHeader(const char* name) const;
 
   // --------------------------------------------------------------------------
-  // Case-insensitive comparison (ASCII).
+  // 不区分大小写的比较（ASCII）。
   // --------------------------------------------------------------------------
-  static bool CaselessCompare(const char* a, const char* b, size_t len) {
-    for (size_t i = 0; i < len; ++i) {
-      char ca = a[i];
-      char cb = b[i];
-      if (ca == cb) continue;
-      if (ca >= 'A' && ca <= 'Z') ca = static_cast<char>(ca + 32);
-      if (cb >= 'A' && cb <= 'Z') cb = static_cast<char>(cb + 32);
-      if (ca != cb) return false;
-    }
-    return true;
-  }
+  static constexpr bool CaselessCompare(const char* a, const char* b,
+                                        size_t len);
 
   // --------------------------------------------------------------------------
-  // Format an unsigned integer as decimal into |buf|.
-  // Returns the number of characters written (excluding null terminator).
+  // 将无符号整数格式化为十进制字符串写入 |buf|。
+  // 返回写入的字符数（不包含 null 终止符）。
   // --------------------------------------------------------------------------
-  static size_t FormatDecimal(char* buf, size_t buf_size,
-                              unsigned long long val) {
-    if (buf == nullptr || buf_size == 0) return 0;
-
-    // Write digits in reverse order.
-    char tmp[32];
-    size_t idx = 0;
-    if (val == 0) {
-      tmp[idx++] = '0';
-    } else {
-      while (val > 0) {
-        tmp[idx++] = static_cast<char>('0' + (val % 10));
-        val /= 10;
-      }
-    }
-
-    // Reverse into output buffer.
-    size_t written = idx;
-    if (written > buf_size) written = buf_size;
-    for (size_t i = 0; i < written; ++i) {
-      buf[i] = tmp[idx - 1 - i];
-    }
-    return written;
-  }
+  static constexpr size_t FormatDecimal(char* buf, size_t buf_size,
+                                        unsigned long long val);
 };
 
 // ============================================================================
-// Free functions — convenience wrappers for common HTTP methods.
+// 自由函数 — 常用 HTTP 方法的便利封装。
 // ============================================================================
 
-// Issues an HTTP GET request to |url|.
+// 对 |url| 发起 HTTP GET 请求。
 inline Result<Response> get(const char* url) {
   return Request()
       .url(url)
@@ -509,7 +268,7 @@ inline Result<Response> get(const char* url) {
       .perform();
 }
 
-// Issues an HTTP POST request to |url| with the given |body|.
+// 对 |url| 发起带有给定 |body| 的 HTTP POST 请求。
 inline Result<Response> post(const char* url, const char* body,
                              size_t body_len) {
   return Request()
@@ -519,7 +278,7 @@ inline Result<Response> post(const char* url, const char* body,
       .perform();
 }
 
-// Issues an HTTP PUT request to |url| with the given |body|.
+// 对 |url| 发起带有给定 |body| 的 HTTP PUT 请求。
 inline Result<Response> put(const char* url, const char* body,
                             size_t body_len) {
   return Request()
@@ -529,7 +288,7 @@ inline Result<Response> put(const char* url, const char* body,
       .perform();
 }
 
-// Issues an HTTP DELETE request to |url|.
+// 对 |url| 发起 HTTP DELETE 请求。
 inline Result<Response> del(const char* url) {
   return Request()
       .url(url)
