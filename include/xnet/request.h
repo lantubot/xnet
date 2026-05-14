@@ -18,14 +18,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-/// @file include/xnet/request.h
-/// @brief HTTP request builder and response types for the XNet library.
-///
-/// Provides a fluent builder-pattern interface via the Request class for
-/// constructing and executing HTTP requests (GET, POST, PUT, DELETE), and
-/// the Response struct for inspecting the results.  This is a low-level,
-/// no-STL C++20 embedded HTTP client built on top of XNet's socket and
-/// URL parsing primitives.
+/** @file include/xnet/request.h
+ * @brief HTTP request builder and response types for the XNet library.
+ *
+ * Provides a fluent builder-pattern interface via the Request class for
+ * constructing and executing HTTP requests (GET, POST, PUT, DELETE), and
+ * the Response struct for inspecting the results.  This is a low-level,
+ * no-STL C++20 embedded HTTP client built on top of XNet's socket and
+ * URL parsing primitives.
+ */
 
 #ifndef XNET_REQUEST_H_
 #define XNET_REQUEST_H_
@@ -43,12 +44,13 @@
 
 namespace xnet {
 
-/// @brief Represents the result of an HTTP request.
-///
-/// Holds the parsed HTTP status line, response headers, and body.
-/// Internal Buffer storage owns the header name/value strings and the body
-/// data; the StringView-based header entries reference this storage and
-/// remain valid for the lifetime of the Response object.
+/** @brief Represents the result of an HTTP request.
+ *
+ * Holds the parsed HTTP status line, response headers, and body.
+ * Internal Buffer storage owns the header name/value strings and the body
+ * data; the StringView-based header entries reference this storage and
+ * remain valid for the lifetime of the Response object.
+ */
 struct Response {
   // --------------------------------------------------------------------------
   // 构造
@@ -64,27 +66,29 @@ struct Response {
   // 访问器
   // --------------------------------------------------------------------------
 
-  /// @brief Returns the HTTP status code (e.g. 200, 404, 500).
+  /** @brief Returns the HTTP status code (e.g. 200, 404, 500). */
   constexpr int status_code() const { return status_code_; }
 
-  /// @brief Returns a pointer to the response body data, or nullptr if empty.
-  /// @return Pointer to body data. Remains valid for the lifetime of this
-  /// Response.
+  /** @brief Returns a pointer to the response body data, or nullptr if empty.
+   * @return Pointer to body data. Remains valid for the lifetime of this
+   * Response.
+   */
   inline const char* body() const {
     return body_.empty() ? nullptr : body_.data();
   }
 
-  /// @brief Returns the size of the response body in bytes.
+  /** @brief Returns the size of the response body in bytes. */
   inline size_t body_size() const { return body_.size(); }
 
-  /// @brief Returns the HTTP version of the response.
+  /** @brief Returns the HTTP version of the response. */
   constexpr Version version() const { return version_; }
 
-  /// @brief Looks up a response header by name (case-insensitive).
-  /// @param name  Null-terminated header name to find.
-  /// @return The header value string, or nullptr if no matching header exists.
-  /// @note The returned pointer is valid for the lifetime of this Response
-  /// object.
+  /** @brief Looks up a response header by name (case-insensitive).
+   * @param name  Null-terminated header name to find.
+   * @return The header value string, or nullptr if no matching header exists.
+   * @note The returned pointer is valid for the lifetime of this Response
+   * object.
+   */
   const char* header(const char* name) const {
     if (name == nullptr) return nullptr;
 
@@ -100,12 +104,13 @@ struct Response {
     return nullptr;
   }
 
-  /// @brief Returns the number of response headers.
+  /** @brief Returns the number of response headers. */
   constexpr size_t num_headers() const { return num_headers_; }
 
-  /// @brief Returns the header at the given index.
-  /// @param i  Zero-based index into the header array.
-  /// @pre @c i < num_headers(), otherwise the behavior is undefined.
+  /** @brief Returns the header at the given index.
+   * @param i  Zero-based index into the header array.
+   * @pre @c i < num_headers(), otherwise the behavior is undefined.
+   */
   constexpr const Header& header_at(size_t i) const { return headers_[i]; }
 
  private:
@@ -118,11 +123,12 @@ struct Response {
   Buffer storage_;  // 头部名称/值 StringView 的后备存储
   Buffer body_;     // 拥有的响应体
 
-  /// @brief Case-insensitive comparison of two equal-length ASCII strings.
-  /// @param a   First string.
-  /// @param b   Second string.
-  /// @param len Length of both strings.
-  /// @return true if the strings are equal ignoring ASCII case.
+  /** @brief Case-insensitive comparison of two equal-length ASCII strings.
+   * @param a   First string.
+   * @param b   Second string.
+   * @param len Length of both strings.
+   * @return true if the strings are equal ignoring ASCII case.
+   */
   static constexpr bool CaselessCompare(const char* a, const char* b,
                                         size_t len) {
     for (size_t i = 0; i < len; ++i) {
@@ -137,26 +143,27 @@ struct Response {
   }
 };
 
-/// @brief Fluent builder for constructing and executing HTTP requests.
-///
-/// Uses the builder pattern with a fluent (method-chaining) interface.
-/// Typical usage:
-/// @code
-///   Result<Response> r = xnet::Request()
-///       .url("https://api.example.com/data")
-///       .method(Method::POST)
-///       .header("Content-Type", "application/json")
-///       .body("{\"key\":\"value\"}", 15)
-///       .timeout(5000)
-///       .perform();
-/// @endcode
-///
-/// Each builder method returns @c *this, allowing callers to chain calls.
-/// The final @ref perform() call executes the request, parses the response,
-/// and returns either a @ref Response or an @ref Error.
+/** @brief Fluent builder for constructing and executing HTTP requests.
+ *
+ * Uses the builder pattern with a fluent (method-chaining) interface.
+ * Typical usage:
+ * @code
+ *   Result<Response> r = xnet::Request()
+ *       .url("https://api.example.com/data")
+ *       .method(Method::POST)
+ *       .header("Content-Type", "application/json")
+ *       .body("{\"key\":\"value\"}", 15)
+ *       .timeout(5000)
+ *       .perform();
+ * @endcode
+ *
+ * Each builder method returns @c *this, allowing callers to chain calls.
+ * The final @ref perform() call executes the request, parses the response,
+ * and returns either a @ref Response or an @ref Error.
+ */
 class Request {
  public:
-  /// @brief Default request timeout in milliseconds.
+  /** @brief Default request timeout in milliseconds. */
   static constexpr int kDefaultTimeoutMs = 30000;
 
   // --------------------------------------------------------------------------
@@ -169,10 +176,11 @@ class Request {
   // 构建器方法（流式接口）
   // --------------------------------------------------------------------------
 
-  /// @brief Sets the request URL.
-  /// @param url  Null-terminated URL string. The string is copied internally
-  ///             so it does not need to remain valid after the call.
-  /// @return Reference to this Request for method chaining.
+  /** @brief Sets the request URL.
+   * @param url  Null-terminated URL string. The string is copied internally
+   *             so it does not need to remain valid after the call.
+   * @return Reference to this Request for method chaining.
+   */
   Request& url(const char* url) {
     if (url != nullptr) {
       url_.clear();
@@ -182,21 +190,23 @@ class Request {
     return *this;
   }
 
-  /// @brief Sets the HTTP method (GET, POST, PUT, DELETE, etc.).
-  /// @param m  The HTTP method to use.
-  /// @return Reference to this Request for method chaining.
+  /** @brief Sets the HTTP method (GET, POST, PUT, DELETE, etc.).
+   * @param m  The HTTP method to use.
+   * @return Reference to this Request for method chaining.
+   */
   Request& method(Method m) {
     method_ = m;
     return *this;
   }
 
-  /// @brief Adds a request header.
-  /// @param name   Header name (e.g. \"Content-Type\"). Copied internally.
-  /// @param value  Header value (e.g. \"application/json\"). Copied internally.
-  /// @return Reference to this Request for method chaining.
-  /// @note If either @p name or @p value is nullptr, or if the maximum number
-  ///       of headers (HttpRequest::kMaxHeaders) has been reached, this call
-  ///       is a no-op.
+  /** @brief Adds a request header.
+   * @param name   Header name (e.g. \"Content-Type\"). Copied internally.
+   * @param value  Header value (e.g. \"application/json\"). Copied internally.
+   * @return Reference to this Request for method chaining.
+   * @note If either @p name or @p value is nullptr, or if the maximum number
+   *       of headers (HttpRequest::kMaxHeaders) has been reached, this call
+   *       is a no-op.
+   */
   Request& header(const char* name, const char* value) {
     if (name == nullptr || value == nullptr) return *this;
     if (num_headers_ >= HttpRequest::kMaxHeaders) return *this;
@@ -223,11 +233,12 @@ class Request {
     return *this;
   }
 
-  /// @brief Sets the request body.
-  /// @param data  Pointer to body data. The data is copied internally so it
-  ///              does not need to remain valid after the call.
-  /// @param len   Number of bytes in @p data.
-  /// @return Reference to this Request for method chaining.
+  /** @brief Sets the request body.
+   * @param data  Pointer to body data. The data is copied internally so it
+   *              does not need to remain valid after the call.
+   * @param len   Number of bytes in @p data.
+   * @return Reference to this Request for method chaining.
+   */
   Request& body(const char* data, size_t len) {
     body_.clear();
     if (data != nullptr && len > 0) {
@@ -236,23 +247,25 @@ class Request {
     return *this;
   }
 
-  /// @brief Sets the request timeout in milliseconds.
-  /// @param ms  Timeout in milliseconds. A value <= 0 means no timeout.
-  /// @return Reference to this Request for method chaining.
+  /** @brief Sets the request timeout in milliseconds.
+   * @param ms  Timeout in milliseconds. A value <= 0 means no timeout.
+   * @return Reference to this Request for method chaining.
+   */
   Request& timeout(int ms) {
     timeout_ms_ = ms;
     return *this;
   }
 
-  /// @brief Executes the HTTP request.
-  ///
-  /// Parses the configured URL, resolves the host, opens a TCP connection,
-  /// serializes and sends the HTTP request (including headers and body),
-  /// receives the full response, parses the response, and returns the result.
-  ///
-  /// @return A @ref Result containing either a populated @ref Response on
-  ///         success, or an @ref Error describing the failure (DNS failure,
-  ///         connection refused, timeout, protocol error, etc.).
+  /** @brief Executes the HTTP request.
+   *
+   * Parses the configured URL, resolves the host, opens a TCP connection,
+   * serializes and sends the HTTP request (including headers and body),
+   * receives the full response, parses the response, and returns the result.
+   *
+   * @return A @ref Result containing either a populated @ref Response on
+   *         success, or an @ref Error describing the failure (DNS failure,
+   *         connection refused, timeout, protocol error, etc.).
+   */
   Result<Response> perform();
 
  private:
@@ -269,25 +282,28 @@ class Request {
   Buffer header_storage_;  // 构建器头部名称/值字符串的存储
   Buffer body_;            // 请求体数据
 
-  /// @brief Checks whether a header with the given name already exists
-  ///        (case-insensitive ASCII comparison).
-  /// @param name  Null-terminated header name to look for.
-  /// @return true if a matching header is found.
+  /** @brief Checks whether a header with the given name already exists
+   *        (case-insensitive ASCII comparison).
+   * @param name  Null-terminated header name to look for.
+   * @return true if a matching header is found.
+   */
   bool HasHeader(const char* name) const;
 
-  /// @brief Case-insensitive ASCII comparison, delegates to
-  /// Response::CaselessCompare.
+  /** @brief Case-insensitive ASCII comparison, delegates to
+   * Response::CaselessCompare.
+   */
   static constexpr bool CaselessCompare(const char* a, const char* b,
                                         size_t len) {
     return Response::CaselessCompare(a, b, len);
   }
 
-  /// @brief Formats an unsigned integer as a decimal string.
-  /// @param buf      Output buffer to write into.
-  /// @param buf_size Size of the output buffer.
-  /// @param val      The unsigned integer value to format.
-  /// @return Number of characters written (may be less than buf_size if
-  ///         the buffer is too small).
+  /** @brief Formats an unsigned integer as a decimal string.
+   * @param buf      Output buffer to write into.
+   * @param buf_size Size of the output buffer.
+   * @param val      The unsigned integer value to format.
+   * @return Number of characters written (may be less than buf_size if
+   *         the buffer is too small).
+   */
   static constexpr size_t FormatDecimal(char* buf, size_t buf_size,
                                         uint32_t val) {
     if (buf == nullptr || buf_size == 0) return 0;
@@ -307,45 +323,50 @@ class Request {
   }
 };
 
-/// @defgroup free_functions HTTP convenience free functions
-/// Convenience wrappers around the Request builder for common HTTP methods.
-/// @{
+/** @defgroup free_functions HTTP convenience free functions
+ * Convenience wrappers around the Request builder for common HTTP methods.
+ * @{
+ */
 
-/// @brief Performs an HTTP GET request to the given URL.
-/// @param url  Null-terminated URL string.
-/// @return Result containing the Response or an Error.
+/** @brief Performs an HTTP GET request to the given URL.
+ * @param url  Null-terminated URL string.
+ * @return Result containing the Response or an Error.
+ */
 inline Result<Response> get(const char* url) {
   return Request().url(url).method(Method::GET).perform();
 }
 
-/// @brief Performs an HTTP POST request with the given body.
-/// @param url       Null-terminated URL string.
-/// @param body      Pointer to the request body data.
-/// @param body_len  Length of the request body in bytes.
-/// @return Result containing the Response or an Error.
+/** @brief Performs an HTTP POST request with the given body.
+ * @param url       Null-terminated URL string.
+ * @param body      Pointer to the request body data.
+ * @param body_len  Length of the request body in bytes.
+ * @return Result containing the Response or an Error.
+ */
 inline Result<Response> post(const char* url, const char* body,
                              size_t body_len) {
   return Request().url(url).method(Method::POST).body(body, body_len).perform();
 }
 
-/// @brief Performs an HTTP PUT request with the given body.
-/// @param url       Null-terminated URL string.
-/// @param body      Pointer to the request body data.
-/// @param body_len  Length of the request body in bytes.
-/// @return Result containing the Response or an Error.
+/** @brief Performs an HTTP PUT request with the given body.
+ * @param url       Null-terminated URL string.
+ * @param body      Pointer to the request body data.
+ * @param body_len  Length of the request body in bytes.
+ * @return Result containing the Response or an Error.
+ */
 inline Result<Response> put(const char* url, const char* body,
                             size_t body_len) {
   return Request().url(url).method(Method::PUT).body(body, body_len).perform();
 }
 
-/// @brief Performs an HTTP DELETE request to the given URL.
-/// @param url  Null-terminated URL string.
-/// @return Result containing the Response or an Error.
+/** @brief Performs an HTTP DELETE request to the given URL.
+ * @param url  Null-terminated URL string.
+ * @return Result containing the Response or an Error.
+ */
 inline Result<Response> del(const char* url) {
   return Request().url(url).method(Method::DELETE).perform();
 }
 
-/// @}
+/** @} */
 
 }  // namespace xnet
 

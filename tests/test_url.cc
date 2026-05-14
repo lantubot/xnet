@@ -18,8 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-/// @file test_url.cc
-/// @brief Unit tests for URL parsing, encoding, and decoding.
+/** @file test_url.cc
+ * @brief Unit tests for URL parsing, encoding, and decoding.
+ */
 
 #include <cstdio>
 #include <cstring>
@@ -29,23 +30,25 @@
 
 using namespace xnet;
 
-/// @brief Compares a StringView against an expected null-terminated C string.
-/// @param sv        The StringView to compare.
-/// @param expected  The expected C string, or nullptr to test for emptiness.
-/// @return true if the StringView contents match the expected string, or if
-///         expected is nullptr and the StringView is empty.
+/** @brief Compares a StringView against an expected null-terminated C string.
+ * @param sv        The StringView to compare.
+ * @param expected  The expected C string, or nullptr to test for emptiness.
+ * @return true if the StringView contents match the expected string, or if
+ *         expected is nullptr and the StringView is empty.
+ */
 bool SvEq(const StringView& sv, const char* expected) {
   if (expected == nullptr) return sv.empty();
   size_t len = std::strlen(expected);
   return sv.size() == len && std::strncmp(sv.data(), expected, len) == 0;
 }
 
-/// @brief Asserts that a StringView equals an expected C string.
-/// @param sv        The StringView to check.
-/// @param expected  The expected C string value.
+/** @brief Asserts that a StringView equals an expected C string.
+ * @param sv        The StringView to check.
+ * @param expected  The expected C string value.
+ */
 #define XNET_ASSERT_SV_EQ(sv, expected) XNET_ASSERT(SvEq(sv, expected))
 
-/// @brief Parses a simple HTTP URL with scheme, host, and path.
+/** @brief Parses a simple HTTP URL with scheme, host, and path. */
 XNET_TEST(ParseSimpleHttp) {
   const char* input = "http://example.com/path/to/page";
   auto result = Url::parse(input, std::strlen(input));
@@ -61,7 +64,7 @@ XNET_TEST(ParseSimpleHttp) {
   XNET_ASSERT(url.password.empty());
 }
 
-/// @brief Parses an HTTPS URL with a non-default port number.
+/** @brief Parses an HTTPS URL with a non-default port number. */
 XNET_TEST(ParseHttpsWithPort) {
   const char* input = "https://example.com:8443/secure";
   auto result = Url::parse(input, std::strlen(input));
@@ -77,7 +80,7 @@ XNET_TEST(ParseHttpsWithPort) {
   XNET_ASSERT(url.password.empty());
 }
 
-/// @brief Parses a URL with a query string and fragment identifier.
+/** @brief Parses a URL with a query string and fragment identifier. */
 XNET_TEST(ParseQueryAndFragment) {
   const char* input = "http://example.com/search?q=hello&n=1#section-2";
   auto result = Url::parse(input, std::strlen(input));
@@ -93,7 +96,7 @@ XNET_TEST(ParseQueryAndFragment) {
   XNET_ASSERT(url.password.empty());
 }
 
-/// @brief Parses an FTP URL with username, password, and port.
+/** @brief Parses an FTP URL with username, password, and port. */
 XNET_TEST(ParseUserPassword) {
   const char* input = "ftp://user:secret@ftp.example.com:21/files";
   auto result = Url::parse(input, std::strlen(input));
@@ -109,7 +112,8 @@ XNET_TEST(ParseUserPassword) {
   XNET_ASSERT(url.fragment.empty());
 }
 
-/// @brief Parses a relative path URL (no scheme or host) with a query string.
+/** @brief Parses a relative path URL (no scheme or host) with a query string.
+ */
 XNET_TEST(ParseRelativePath) {
   const char* input = "/relative/path?query=1";
   auto result = Url::parse(input, std::strlen(input));
@@ -125,8 +129,9 @@ XNET_TEST(ParseRelativePath) {
   XNET_ASSERT(url.password.empty());
 }
 
-/// @brief Parses IPv6 URLs with brackets and optional port, query, and
-/// fragment.
+/** @brief Parses IPv6 URLs with brackets and optional port, query, and
+ * fragment.
+ */
 XNET_TEST(ParseIPv6Url) {
   const char* input = "http://[::1]:8080/path";
   auto result = Url::parse(input, std::strlen(input));
@@ -153,7 +158,7 @@ XNET_TEST(ParseIPv6Url) {
   }
 }
 
-/// @brief Verifies that empty and null input strings produce parse errors.
+/** @brief Verifies that empty and null input strings produce parse errors. */
 XNET_TEST(ParseEmptyUrlFails) {
   {
     auto result = Url::parse("", static_cast<size_t>(0));
@@ -165,9 +170,10 @@ XNET_TEST(ParseEmptyUrlFails) {
   }
 }
 
-/// @brief Tests URL encoding / decoding round-trips, plus edge cases for
-///        unreserved characters, plus-to-space conversion, and null output
-///        buffer handling.
+/** @brief Tests URL encoding / decoding round-trips, plus edge cases for
+ *        unreserved characters, plus-to-space conversion, and null output
+ *        buffer handling.
+ */
 XNET_TEST(EncodeDecodeRoundtrip) {
   const char* input1 = "hello world!@#$%^&*()_+-=[]{}|;':\",./<>?`~";
   size_t len1 = std::strlen(input1);
@@ -231,8 +237,9 @@ XNET_TEST(EncodeDecodeRoundtrip) {
   XNET_ASSERT(!ok);
 }
 
-/// @brief Verifies that default ports (80, 443) are parsed correctly and that
-///        explicit default or non-standard port numbers are preserved.
+/** @brief Verifies that default ports (80, 443) are parsed correctly and that
+ *        explicit default or non-standard port numbers are preserved.
+ */
 XNET_TEST(DefaultPorts) {
   {
     const char* input = "http://example.com/";
@@ -286,8 +293,9 @@ XNET_TEST(DefaultPorts) {
   }
 }
 
-/// @brief Test runner entry point. Executes all URL unit tests and prints a
-///        summary message.
+/** @brief Test runner entry point. Executes all URL unit tests and prints a
+ *        summary message.
+ */
 int main() {
   XNET_RUN_TEST(ParseSimpleHttp);
   XNET_RUN_TEST(ParseHttpsWithPort);

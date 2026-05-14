@@ -24,7 +24,7 @@
 #include "test_helpers.h"
 #include "xnet/str_view.h"
 
-/// @brief Verify default-constructed StringView is empty with null data.
+/** @brief Verify default-constructed StringView is empty with null data. */
 XNET_TEST(DefaultConstruction) {
   xnet::StringView sv;
   XNET_ASSERT(sv.data() == nullptr);
@@ -33,7 +33,7 @@ XNET_TEST(DefaultConstruction) {
   XNET_ASSERT(sv.empty() == true);
 }
 
-/// @brief Test construction from a const char pointer, including nullptr.
+/** @brief Test construction from a const char pointer, including nullptr. */
 XNET_TEST(FromConstCharPtr) {
   const char* hello = "hello";
   xnet::StringView sv(hello);
@@ -49,7 +49,7 @@ XNET_TEST(FromConstCharPtr) {
   XNET_ASSERT(sv_null.empty() == true);
 }
 
-/// @brief Test construction from a pointer and explicit length.
+/** @brief Test construction from a pointer and explicit length. */
 XNET_TEST(FromPtrLen) {
   const char* text = "hello world";
   xnet::StringView sv(text, 5);
@@ -62,8 +62,9 @@ XNET_TEST(FromPtrLen) {
   XNET_ASSERT(empty_sv.empty() == true);
 }
 
-/// @brief Test equality and inequality comparisons between StringView
-/// instances.
+/** @brief Test equality and inequality comparisons between StringView
+ * instances.
+ */
 XNET_TEST(Comparison) {
   constexpr xnet::StringView a("abc");
   constexpr xnet::StringView b("abc");
@@ -82,7 +83,8 @@ XNET_TEST(Comparison) {
   XNET_ASSERT(a == a);
 }
 
-/// @brief Test starts_with() with various prefixes, empty strings, and nullptr.
+/** @brief Test starts_with() with various prefixes, empty strings, and nullptr.
+ */
 XNET_TEST(StartsWith) {
   xnet::StringView sv("hello world");
   XNET_ASSERT(sv.starts_with("hello") == true);
@@ -97,8 +99,9 @@ XNET_TEST(StartsWith) {
   XNET_ASSERT(sv.starts_with(nullptr) == false);
 }
 
-/// @brief Test find() for substrings, including offset search, missing strings,
-/// empty strings, and nullptr.
+/** @brief Test find() for substrings, including offset search, missing strings,
+ * empty strings, and nullptr.
+ */
 XNET_TEST(FindSubstring) {
   xnet::StringView sv("hello world, hello");
   XNET_ASSERT(sv.find("world") == 6);
@@ -111,8 +114,9 @@ XNET_TEST(FindSubstring) {
   XNET_ASSERT(sv.find(nullptr) == xnet::StringView::npos);
 }
 
-/// @brief Test find() for single characters, including offset search and
-/// missing characters.
+/** @brief Test find() for single characters, including offset search and
+ * missing characters.
+ */
 XNET_TEST(FindChar) {
   xnet::StringView sv("hello world");
   XNET_ASSERT(sv.find('w') == 6);
@@ -125,8 +129,9 @@ XNET_TEST(FindChar) {
   XNET_ASSERT(empty.find('a') == xnet::StringView::npos);
 }
 
-/// @brief Test substr() with various positions and lengths, including
-/// out-of-bounds cases.
+/** @brief Test substr() with various positions and lengths, including
+ * out-of-bounds cases.
+ */
 XNET_TEST(Substr) {
   xnet::StringView sv("hello world");
   XNET_ASSERT(sv.substr(0, 5) == xnet::StringView("hello"));
@@ -145,8 +150,9 @@ XNET_TEST(Substr) {
   XNET_ASSERT(sub.empty() == true);
 }
 
-/// @brief Test to_int() conversion, including positive, negative, edge cases,
-/// and invalid inputs.
+/** @brief Test to_int() conversion, including positive, negative, edge cases,
+ * and invalid inputs.
+ */
 XNET_TEST(ToInt) {
   XNET_ASSERT(xnet::StringView("0").to_int() == 0);
   XNET_ASSERT(xnet::StringView("123").to_int() == 123);
@@ -167,8 +173,9 @@ XNET_TEST(ToInt) {
   XNET_ASSERT(xnet::StringView("-9999999999").to_int() == INT_MIN);
 }
 
-/// @brief Test empty() behavior for default, null, zero-length, and non-empty
-/// StringViews.
+/** @brief Test empty() behavior for default, null, zero-length, and non-empty
+ * StringViews.
+ */
 XNET_TEST(Empty) {
   xnet::StringView default_sv;
   XNET_ASSERT(default_sv.empty() == true);
@@ -187,7 +194,7 @@ XNET_TEST(Empty) {
   XNET_ASSERT(explicit_empty.empty() == true);
 }
 
-/// @brief Entry point — runs all StringView test cases.
+/** @brief Entry point — runs all StringView test cases. */
 int main() {
   XNET_RUN_TEST(DefaultConstruction);
   XNET_RUN_TEST(FromConstCharPtr);

@@ -1,15 +1,16 @@
-/// @file src/request.cc
-/// @brief Implementation of the HTTP Request builder — URL parsing, socket
-///        I/O, request serialization, and response parsing.
-///
-/// Implements the full lifecycle of a single HTTP request:
-///   1. URL parsing (via Url::parse)
-///   2. Socket creation and TCP connect
-///   3. HTTP request serialization (via HttpRequest::serialize)
-///   4. Socket send with retry loop
-///   5. Socket receive with chunked buffering
-///   6. HTTP response parsing (via HttpResponse::parse)
-///   7. Populating the Response result
+/** @file src/request.cc
+ * @brief Implementation of the HTTP Request builder — URL parsing, socket
+ *        I/O, request serialization, and response parsing.
+ *
+ * Implements the full lifecycle of a single HTTP request:
+ *   1. URL parsing (via Url::parse)
+ *   2. Socket creation and TCP connect
+ *   3. HTTP request serialization (via HttpRequest::serialize)
+ *   4. Socket send with retry loop
+ *   5. Socket receive with chunked buffering
+ *   6. HTTP response parsing (via HttpResponse::parse)
+ *   7. Populating the Response result
+ */
 
 #include "xnet/request.h"
 
@@ -164,10 +165,11 @@ Result<Response> Request::perform() {
   return Result<Response>::ok(static_cast<Response&&>(resp));
 }
 
-/// @brief Checks whether a header with the given name has already been set
-///        on this request (case-insensitive ASCII comparison).
-/// @param name  Null-terminated header name to look up.
-/// @return true if a matching header exists.
+/** @brief Checks whether a header with the given name has already been set
+ *        on this request (case-insensitive ASCII comparison).
+ * @param name  Null-terminated header name to look up.
+ * @return true if a matching header exists.
+ */
 bool Request::HasHeader(const char* name) const {
   if (name == nullptr) return false;
   size_t name_len = std::strlen(name);
