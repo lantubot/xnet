@@ -18,6 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/// @file socket_linux.cc
+/// @brief Implementation of LinuxTcpSocket — POSIX TCP socket for Linux.
+///
+/// Uses non-blocking sockets (O_NONBLOCK via fcntl) with poll()-based I/O
+/// multiplexing for connect/send/recv timeouts.  DNS resolution is performed
+/// through getaddrinfo().  Error codes from errno are translated to the
+/// platform-independent xnet::Status enum.
+///
+/// No STL dependencies.  C++20.
+
 #include "socket_linux.h"
 
 #include <arpa/inet.h>
@@ -32,9 +42,21 @@
 
 namespace xnet {
 
+/// Default constructor — initialises fd_ to -1 (unconnected state).
 LinuxTcpSocket::LinuxTcpSocket() : fd_(-1) {}
+
+/// Destructor — closes the socket if it is still open.
 LinuxTcpSocket::~LinuxTcpSocket() { close(); }
 
+/// Translates a POSIX errno to an xnet::Status code.
+///
+/// Handles connection errors (ECONNREFUSED, ECONNRESET, ETIMEDOUT),
+/// resource errors (ENOMEM), protocol errors (EAFNOSUPPORT, etc.), and
+/// transient errors (EAGAIN, EINTR).  All unrecognised codes map to
+/// Status::IO_ERROR.
+///
+/// @param err  The POSIX errno value to translate.
+/// @return The corresponding xnet::Status.
 Status LinuxTcpSocket::errno_to_status(int err) {
   switch (err) {
     case ECONNREFUSED:
@@ -64,6 +86,19 @@ Status LinuxTcpSocket::errno_to_status(int err) {
   }
 }
 
+/// Connect to a remote host:port using a non-blocking POSIX socket.
+///
+/// Creates a TCP socket, sets O_NONBLOCK, resolves the hostname via
+/// getaddrinfo(), and issues a non-blocking connect().  If connect()
+/// returns EINPROGRESS, poll() is used to wait for the connection to
+/// complete or the specified timeout to elapse.  The socket error is
+/// checked via getsockopt(SO_ERROR) after poll() returns.
+///
+/// @param host       Null-terminated hostname or dotted-decimal IP.
+/// @param port       Port number in host byte order (1–65535).
+/// @param timeout_ms Max wait in milliseconds for connection completion;
+///                   <= 0 means wait indefinitely.
+/// @return Status::OK on successful connection, or an error status.
 Status LinuxTcpSocket::connect(const char* host, int port, int timeout_ms) {
   if (host == nullptr || host[0] == '\0' || port <= 0 || port > 65535)
     return Status::INVALID_ARGUMENT;
@@ -155,6 +190,16 @@ Status LinuxTcpSocket::connect(const char* host, int port, int timeout_ms) {
   return status;
 }
 
+/// Send data over the connected socket.
+///
+/// Loops until all bytes are transferred or a non-recoverable error occurs.
+/// Uses MSG_NOSIGNAL to prevent SIGPIPE.  On EAGAIN/EWOULDBLOCK, waits
+/// for the socket to become writable via poll() before retrying.
+///
+/// @param data  Pointer to the buffer of data to send.
+/// @param len   Number of bytes to send.
+/// @return Result::ok with the number of bytes actually sent on success,
+///         or Result::err with an error status on failure.
 Result<size_t> LinuxTcpSocket::send(const void* data, size_t len) {
   if (fd_ < 0)
     return Result<size_t>::err(
@@ -191,6 +236,16 @@ Result<size_t> LinuxTcpSocket::send(const void* data, size_t len) {
   return Result<size_t>::ok(total_sent);
 }
 
+/// Receive data from the connected socket (blocking).
+///
+/// Uses poll() to wait for the socket to become readable.  Automatically
+/// retries on EINTR, EAGAIN, and EWOULDBLOCK.  Returns 0 on connection
+/// close by the peer.
+///
+/// @param buf     Pointer to the buffer where received data will be stored.
+/// @param max_len Maximum number of bytes to read into buf.
+/// @return Result::ok with the number of bytes received on success,
+///         or Result::err with an error status on failure.
 Result<size_t> LinuxTcpSocket::recv(void* buf, size_t max_len) {
   if (fd_ < 0)
     return Result<size_t>::err(
@@ -219,6 +274,12 @@ Result<size_t> LinuxTcpSocket::recv(void* buf, size_t max_len) {
   return Result<size_t>::ok(static_cast<size_t>(n));
 }
 
+/// Close the socket and release the file descriptor.
+///
+/// Sets fd_ to -1 before calling ::close() to prevent double-close
+/// in concurrent scenarios.  Returns immediately if already closed.
+///
+/// @return Status::OK on success, or an error status if ::close() fails.
 Status LinuxTcpSocket::close() {
   if (fd_ < 0) return Status::OK;
   int fd = fd_;
@@ -227,6 +288,19 @@ Status LinuxTcpSocket::close() {
   return Status::OK;
 }
 
+/// Factory method — creates a new LinuxTcpSocket instance.
+///
+/// Allocates a LinuxTcpSocket on the heap using std::nothrow.  The
+/// returned Socket* owns the allocation; the caller is responsible for
+/// deleting it.
+///
+/// @param host  Unused (host parameter reserved for future use).
+/// @param port  Unused (port parameter reserved for future use).
+/// @return Result::ok with a pointer to the new Socket on success,
+///         or Result::err with Status::OUT_OF_MEMORY on allocation failure.
+///
+/// @note Linux implementation: simple heap allocation — no WSAStartup
+///       or other platform-specific initialisation needed.
 Result<Socket*> SocketFactory::create(const char* host, int port) {
   XNET_UNUSED(host);
   XNET_UNUSED(port);

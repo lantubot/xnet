@@ -18,14 +18,34 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/// @file socket_windows.cc
+/// @brief Implementation of WinTcpSocket — Winsock2 TCP socket for Windows.
+///
+/// Manages WSAStartup/WSACleanup lifecycle through a one-shot initialisation
+/// guard (g_wsa_started).  Uses non-blocking sockets (ioctlsocket FIONBIO)
+/// with select()-based I/O multiplexing for connect/send/recv timeouts.
+/// DNS resolution is performed through getaddrinfo().  Winsock error codes
+/// are translated to the platform-independent xnet::Status enum.
+///
+/// No STL dependencies.  C++20.
+
 #include "socket_windows.h"
 
 #include <cstring>
 
 namespace xnet {
 
+/// One-shot guard ensuring WSAStartup is called exactly once.
+/// 0 = not started, 1 = started.
 static LONG g_wsa_started = 0;
 
+/// Ensure the Winsock2 library is initialised.
+///
+/// Calls WSAStartup(2,2) on first invocation and sets the global flag via
+/// InterlockedExchange to prevent re-initialisation.  Safe for concurrent
+/// calls from multiple threads.
+///
+/// @return Status::OK on success, Status::IO_ERROR if WSAStartup fails.
 static Status EnsureWsaStarted() {
   if (g_wsa_started) return Status::OK;
   WSADATA wsa_data;
@@ -35,9 +55,23 @@ static Status EnsureWsaStarted() {
   return Status::OK;
 }
 
+/// Default constructor — initialises fd_ to INVALID_SOCKET (unconnected state).
 WinTcpSocket::WinTcpSocket() : fd_(INVALID_SOCKET) {}
+
+/// Destructor — closes the socket if it is still open.
+/// The return value of close() is intentionally discarded.
 WinTcpSocket::~WinTcpSocket() { XNET_UNUSED(close()); }
 
+/// Translates a Winsock error code (WSAGetLastError) to an xnet::Status.
+///
+/// Handles timeouts (WSAETIMEDOUT), connection errors (WSAECONNREFUSED,
+/// WSAECONNRESET, WSAECONNABORTED), DNS failures (WSAHOST_NOT_FOUND, etc.),
+/// resource errors (WSAENOBUFS, WSA_NOT_ENOUGH_MEMORY), protocol errors
+/// (WSAEAFNOSUPPORT, WSAEINVAL), and network unreachable errors.
+/// All unrecognised codes map to Status::IO_ERROR.
+///
+/// @param wsa_err  The Winsock error code to translate.
+/// @return The corresponding xnet::Status.
 Status WinTcpSocket::wsa_error_to_status(int wsa_err) {
   switch (wsa_err) {
     case WSAETIMEDOUT:
@@ -66,6 +100,15 @@ Status WinTcpSocket::wsa_error_to_status(int wsa_err) {
   }
 }
 
+/// Convert an integer port number to a string representation.
+///
+/// Hand-written conversion (no snprintf) to avoid STL dependencies.
+/// The result is written into the provided buffer.
+///
+/// @param port     Port number to convert (non-negative).
+/// @param buf      Output buffer for the null-terminated port string.
+/// @param buf_size Size of the output buffer in bytes.
+/// @return Pointer to buf, now containing the port string.
 static const char* PortToString(int port, char* buf, size_t buf_size) {
   XNET_UNUSED(buf_size);
   char tmp[6];
@@ -88,6 +131,20 @@ static const char* PortToString(int port, char* buf, size_t buf_size) {
   return buf;
 }
 
+/// Connect to a remote host:port using a non-blocking Winsock socket.
+///
+/// Ensures WSAStartup has been called, resolves the hostname via
+/// getaddrinfo(), creates a TCP socket, sets it to non-blocking mode
+/// (ioctlsocket FIONBIO), and initiates a non-blocking connect().
+/// Uses select() to wait for the connection to complete or the specified
+/// timeout to elapse.  On success, the socket is returned to blocking
+/// mode before returning.  Closes any previously open connection first.
+///
+/// @param host       Null-terminated hostname or IP address.
+/// @param port       Port number in host byte order (1–65535).
+/// @param timeout_ms Max wait in milliseconds for connection completion;
+///                   <= 0 means wait indefinitely.
+/// @return Status::OK on successful connection, or an error status.
 Status WinTcpSocket::connect(const char* host, int port, int timeout_ms) {
   Status ws = EnsureWsaStarted();
   if (ws != Status::OK) return ws;
@@ -188,6 +245,16 @@ Status WinTcpSocket::connect(const char* host, int port, int timeout_ms) {
   return Status::OK;
 }
 
+/// Send data over the connected Winsock socket.
+///
+/// Loops until all bytes are transferred or a non-recoverable error occurs.
+/// On WSAEWOULDBLOCK or WSAEINTR, retries automatically.  If partial data
+/// has been sent before an error, returns the partial count.
+///
+/// @param data  Pointer to the buffer of data to send.
+/// @param len   Number of bytes to send.
+/// @return Result::ok with the number of bytes actually sent on success,
+///         or Result::err with an error status on failure.
 Result<size_t> WinTcpSocket::send(const void* data, size_t len) {
   if (fd_ == INVALID_SOCKET)
     return Result<size_t>::err(Error(Status::IO_ERROR, "socket not connected"));
@@ -211,6 +278,16 @@ Result<size_t> WinTcpSocket::send(const void* data, size_t len) {
   return Result<size_t>::ok(total_sent);
 }
 
+/// Receive data from the connected Winsock socket (blocking).
+///
+/// Uses select() with a 30-second timeout to wait for data availability.
+/// On WSAEWOULDBLOCK or WSAEINTR, returns 0 bytes.  Returns 0 on
+/// connection close by the peer.
+///
+/// @param buf     Pointer to the buffer where received data will be stored.
+/// @param max_len Maximum number of bytes to read into buf.
+/// @return Result::ok with the number of bytes received on success,
+///         or Result::err with an error status on failure.
 Result<size_t> WinTcpSocket::recv(void* buf, size_t max_len) {
   if (fd_ == INVALID_SOCKET)
     return Result<size_t>::err(Error(Status::IO_ERROR, "socket not connected"));
@@ -246,6 +323,12 @@ Result<size_t> WinTcpSocket::recv(void* buf, size_t max_len) {
   return Result<size_t>::ok(static_cast<size_t>(nread));
 }
 
+/// Close the Winsock socket and release the SOCKET handle.
+///
+/// Issues shutdown(SD_BOTH) for a graceful disconnect, then calls
+/// closesocket().  Sets fd_ to INVALID_SOCKET to prevent double-close.
+///
+/// @return Status::OK on success, or an error status if closesocket() fails.
 Status WinTcpSocket::close() {
   if (fd_ == INVALID_SOCKET) return Status::OK;
   ::shutdown(fd_, SD_BOTH);
@@ -258,6 +341,19 @@ Status WinTcpSocket::close() {
   return Status::OK;
 }
 
+/// Factory method — creates a new WinTcpSocket instance.
+///
+/// Ensures WSAStartup is called before allocating the socket object, then
+/// allocates a WinTcpSocket on the heap.  The returned Socket* owns the
+/// allocation; the caller is responsible for deleting it.
+///
+/// @param host  Unused (host parameter reserved for future use).
+/// @param port  Unused (port parameter reserved for future use).
+/// @return Result::ok with a pointer to the new Socket on success,
+///         or Result::err with an error status on failure.
+///
+/// @note Windows implementation: calls EnsureWsaStarted() before allocation
+///       to guarantee the Winsock library is ready.
 Result<Socket*> SocketFactory::create(const char* host, int port) {
   XNET_UNUSED(host);
   XNET_UNUSED(port);

@@ -20,13 +20,14 @@
 
 #pragma once
 
-// Linux TCP socket abstraction using POSIX sockets + poll().
-//
-// Non-blocking I/O via fcntl O_NONBLOCK.  Connect timeouts are implemented
-// via non-blocking connect + poll().  Send/recv timeouts also use poll().
-// DNS resolution uses getaddrinfo().
-//
-// No STL dependencies.  C++20.
+/// @file socket_linux.h
+/// @brief Linux TCP socket abstraction using POSIX sockets + poll().
+///
+/// Non-blocking I/O via fcntl O_NONBLOCK.  Connect timeouts are implemented
+/// via non-blocking connect + poll().  Send/recv timeouts also use poll().
+/// DNS resolution uses getaddrinfo().
+///
+/// No STL dependencies.  C++20.
 
 #include <fcntl.h>
 #include <poll.h>
@@ -37,31 +38,54 @@
 
 namespace xnet {
 
-// ============================================================================
-// LinuxTcpSocket — POSIX-backed TCP socket for Linux
-// ============================================================================
+/// POSIX-backed TCP socket implementation for Linux.
+///
+/// Wraps a raw file descriptor with non-blocking I/O, poll()-based timeouts,
+/// and getaddrinfo() DNS resolution.  Implements the xnet::Socket interface.
 class LinuxTcpSocket : public Socket {
  public:
-  // Create an unconnected socket.  fd_ is initialised to -1.
+  /// Constructs an unconnected socket.  fd_ is initialised to -1.
   LinuxTcpSocket();
 
-  // Destructor calls close() internally if the socket is still open.
+  /// Destructor calls close() internally if the socket is still open.
   ~LinuxTcpSocket() override;
 
   // ── Socket interface ───────────────────────────────────────────────────
+
+  /// Connect to a remote host:port.
+  /// @param host  Null-terminated hostname or IP address.
+  /// @param port  Port number in host byte order (1–65535).
+  /// @param timeout_ms  Connection timeout in milliseconds; <= 0 means no
+  ///                    timeout (blocking).
+  /// @return Status::OK on success, or an error status on failure.
   Status connect(const char* host, int port, int timeout_ms) override;
+
+  /// Send data over the connected socket.
+  /// @param data  Pointer to the data buffer to send.
+  /// @param len   Number of bytes to send.
+  /// @return Result containing the number of bytes actually sent, or an error.
   Result<size_t> send(const void* data, size_t len) override;
+
+  /// Receive data from the connected socket (blocking, via poll()).
+  /// @param buf     Pointer to the receive buffer.
+  /// @param max_len Maximum number of bytes to receive.
+  /// @return Result containing the number of bytes received, or an error.
   Result<size_t> recv(void* buf, size_t max_len) override;
+
+  /// Close the socket and release the file descriptor.
+  /// @return Status::OK on success, or an error status on failure.
   Status close() override;
 
  private:
-  int fd_;  // socket descriptor, -1 when not connected
+  int fd_;  ///< Socket file descriptor; -1 when not connected.
 
   // Non-copyable, non-movable.
   LinuxTcpSocket(const LinuxTcpSocket&) = delete;
   LinuxTcpSocket& operator=(const LinuxTcpSocket&) = delete;
 
-  // Map POSIX errno to an xnet Status code.
+  /// Map a POSIX errno value to the corresponding xnet Status code.
+  /// @param err  The errno value to translate.
+  /// @return The corresponding Status enum value.
   static Status errno_to_status(int err);
 };
 
