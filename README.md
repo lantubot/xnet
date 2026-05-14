@@ -13,6 +13,8 @@
 
 面向嵌入式的轻量级 C++20 网络库，**零 STL 依赖**，类似 curl 的 HTTP 客户端。
 
+> 📖 **完整文档参见 [`docs/`](docs/index.md) 目录**
+
 ## ✨ 特性
 
 - **零 STL 依赖** — 无 std::vector、std::string，适合嵌入式交叉编译（ESP32、ARM）
@@ -80,11 +82,27 @@ xnet/
 │   ├── linux/       # POSIX sockets + getaddrinfo
 │   ├── windows/     # WinSock2
 │   └── esp32/       # LWIP (esp-tls)
+├── docs/            # 文档
+│   ├── index.md     # 文档首页
+│   ├── api.md       # API 参考
+│   ├── usage.md     # 使用指南
+│   ├── build.md     # 构建指南
+│   └── platforms.md # 平台注意事项
 ├── tests/           # 单元测试（CTest）
 ├── examples/        # 示例程序
 ├── .clang-format    # Google C++ 代码风格
 └── CMakeLists.txt   # CMake 构建系统
 ```
+
+## 📖 文档
+
+| 文档 | 说明 |
+|:-----|:-----|
+| [📚 文档首页](docs/index.md) | 架构概览、设计原则、快速参考 |
+| [📐 API 参考](docs/api.md) | 完整 API 文档，覆盖所有模块 |
+| [💡 使用指南](docs/usage.md) | 示例代码、使用模式、最佳实践 |
+| [🔧 构建指南](docs/build.md) | 构建选项、交叉编译、CI 配置 |
+| [🌐 平台注意事项](docs/platforms.md) | Linux / Windows / ESP32 技术细节 |
 
 ## 🔧 构建选项
 
@@ -153,6 +171,8 @@ resp.num_headers()     // 头部数量
 resp.header_at(i)      // 按索引访问头部
 ```
 
+> 📖 **详细的 API 文档请参阅 [`docs/api.md`](docs/api.md)**
+
 ## 🌐 平台支持
 
 | 平台 | 状态 | 套接字层 | DNS |
@@ -160,6 +180,8 @@ resp.header_at(i)      // 按索引访问头部
 | Linux | ✅ | POSIX sockets + poll() | getaddrinfo |
 | Windows | ✅ | WinSock2 + select() | GetAddrInfoW |
 | ESP32 | ✅ | LWIP + esp-tls | lwip_getaddrinfo |
+
+> 📖 **平台技术细节请参阅 [`docs/platforms.md`](docs/platforms.md)**
 
 ## 🧪 测试
 
@@ -171,6 +193,8 @@ ctest --output-on-failure
 
 测试使用轻量级自定义框架（`test_helpers.h`），无外部依赖。
 覆盖 Buffer、StringView、URL 解析的核心功能。
+
+> 📖 **构建和测试详情请参阅 [`docs/build.md`](docs/build.md)**
 
 ## 🤝 贡献
 
