@@ -1,7 +1,22 @@
 #include "xnet/url.h"
 
+/// @file url.cc
+/// @brief RFC 3986 URL 解析器实现 — 百分号编码/解码、URL 组件解析
+
 namespace xnet {
 
+/// 解析 URL 字符串。
+///
+/// 按 RFC 3986 分阶段解析：
+///   1. 提取 scheme（ParseScheme）
+///   2. 处理 authority（userinfo@host:port）
+///   3. 提取 fragment（#）
+///   4. 提取 query（?）
+///   5. 提取 path
+///
+/// @param str  待解析的 URL 字符串
+/// @param len  字符串长度
+/// @return 解析成功返回包含 Url 的 Result，格式错误返回 Error
 Result<Url> Url::parse(const char* str, size_t len) {
   Url url;
 
@@ -98,6 +113,14 @@ Result<Url> Url::parse(const char* str, size_t len) {
   return Result<Url>::ok(url);
 }
 
+/// 查找并提取 URL scheme。
+///
+/// scheme 必须以字母开头，后跟字母、数字、'+'、'-' 或 '.'，以 ':' 结尾。
+///
+/// @param str     URL 字符串
+/// @param len     字符串长度
+/// @param scheme  输出，找到的 scheme 子串
+/// @return 冒号索引，未找到时返回 npos
 size_t Url::ParseScheme(const char* str, size_t len, StringView& scheme) {
   if (str == nullptr || len == 0) return StringView::npos;
   char first = str[0];
@@ -120,6 +143,14 @@ size_t Url::ParseScheme(const char* str, size_t len, StringView& scheme) {
   return StringView::npos;
 }
 
+/// 查找匹配的 IPv6 右方括号。
+///
+/// 从 pos 位置开始查找，str[pos] 必须为 '['。
+///
+/// @param str  字符串
+/// @param len  字符串长度
+/// @param pos  起始位置（应指向 '['）
+/// @return 匹配的 ']' 索引，未找到返回 npos
 size_t Url::FindClosingBracket(const char* str, size_t len, size_t pos) {
   if (pos >= len || str[pos] != '[') return StringView::npos;
   for (size_t i = pos + 1; i < len; ++i)
@@ -127,6 +158,16 @@ size_t Url::FindClosingBracket(const char* str, size_t len, size_t pos) {
   return StringView::npos;
 }
 
+/// 对输入字符串进行百分号编码。
+///
+/// 非保留字符（A-Z、a-z、0-9、'-'、'.'、'_'、'~'）原样输出；
+/// 其余字符编码为 %XX（大写十六进制）。
+///
+/// @param input       待编码的输入
+/// @param output      输出缓冲区指针
+/// @param output_size 输出缓冲区大小
+/// @param written     可选，接收实际写入字节数
+/// @return 成功返回 true，缓冲区不足返回 false
 bool Url::encode(const StringView& input, char* output, size_t output_size,
                  size_t* written) {
   static const char kHexDigits[] = "0123456789ABCDEF";
@@ -159,6 +200,16 @@ bool Url::encode(const StringView& input, char* output, size_t output_size,
   return true;
 }
 
+/// 对输入字符串进行百分号解码。
+///
+/// %XX 序列解码为对应字节；'+' 解码为空格。
+/// 无效的 % 序列导致解码失败。
+///
+/// @param input       待解码的输入
+/// @param output      输出缓冲区指针
+/// @param output_size 输出缓冲区大小
+/// @param written     可选，接收实际写入字节数
+/// @return 成功返回 true，格式错误或缓冲区不足返回 false
 bool Url::decode(const StringView& input, char* output, size_t output_size,
                  size_t* written) {
   if (output == nullptr || output_size == 0) {
@@ -203,6 +254,10 @@ bool Url::decode(const StringView& input, char* output, size_t output_size,
   return true;
 }
 
+/// 十六进制字符转整数值。
+///
+/// @param c  十六进制字符
+/// @return 0-15，无效字符返回 -1
 constexpr int Url::HexValue(char c) {
   if (c >= '0' && c <= '9') return c - '0';
   if (c >= 'a' && c <= 'f') return c - 'a' + 10;
