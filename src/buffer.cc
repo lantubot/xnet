@@ -101,4 +101,13 @@ Buffer Buffer::clone() const {
   return result;
 }
 
+/** Searches for character @p c in the buffer.
+ * @return  The index of the first occurrence, or npos if not found.
+ */
+size_t Buffer::find(char c) const {
+  for (size_t i = 0; i < size_; ++i)
+    if (data_[i] == c) return i;
+  return npos;
+}
+
 }  // namespace xnet

@@ -168,6 +168,11 @@ class Buffer {
    */
   size_t find(const char* needle, size_t needle_len) const;
 
+  /** Searches for character @p c in the buffer.
+   * @return  The index of the first occurrence, or npos if not found.
+   */
+  size_t find(char c) const;
+
   // -- 克隆（深拷贝）--------------------------------------------------------
 
   /** Returns a deep copy of this buffer.

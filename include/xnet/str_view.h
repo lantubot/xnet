@@ -32,6 +32,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <cassert>
+
 namespace xnet {
 
 /** @brief A lightweight non-owning view over a contiguous sequence of
@@ -163,6 +165,42 @@ class StringView {
     size_t plen = StrLen(prefix);
     if (plen > size_) return false;
     return Compare(data_, prefix, plen) == 0;
+  }
+
+  /** @brief Checks whether the view ends with the given suffix.
+   * @param suffix A null-terminated C-string suffix to test against.
+   *               If nullptr, returns empty().
+   * @return true if the view ends with the characters in suffix,
+   *         false otherwise.
+   */
+  constexpr bool ends_with(const char* suffix) const noexcept {
+    if (suffix == nullptr) return empty();
+    size_t slen = StrLen(suffix);
+    if (slen > size_) return false;
+    return Compare(data_ + (size_ - slen), suffix, slen) == 0;
+  }
+
+  /** @brief Removes @p n characters from the beginning of the view.
+   *
+   * Shrinks the view by advancing the start pointer by @p n positions.
+   * @param n Number of characters to remove. Must be <= size().
+   * @pre assert(n <= size_)
+   */
+  constexpr void remove_prefix(size_t n) noexcept {
+    assert(n <= size_);
+    data_ += n;
+    size_ -= n;
+  }
+
+  /** @brief Removes @p n characters from the end of the view.
+   *
+   * Shrinks the view by reducing the length by @p n.
+   * @param n Number of characters to remove. Must be <= size().
+   * @pre assert(n <= size_)
+   */
+  constexpr void remove_suffix(size_t n) noexcept {
+    assert(n <= size_);
+    size_ -= n;
   }
 
   /** @brief Searches for the first occurrence of a substring.
