@@ -1,9 +1,17 @@
 #include "xnet/http.h"
 
+/// @file src/http.cc
+/// @brief HTTP request serialization and response parsing implementation.
+
 #include <cstring>
 
 namespace xnet {
 
+/// @brief Serialize this HTTP request into @p out in HTTP/1.x wire format.
+/// Appends the request line (METHOD URL VERSION), headers, empty-line
+/// delimiter, and optional body directly to the buffer.
+/// @param out The buffer to write the serialized request into.
+/// @return Status::OK on success.
 Status HttpRequest::serialize(Buffer& out) const {
   out.append(to_string(method), std::strlen(to_string(method)));
   out.append(' ');
@@ -31,6 +39,16 @@ Status HttpRequest::serialize(Buffer& out) const {
   return Status::OK;
 }
 
+/// @brief Parse an HTTP response from raw bytes.
+/// Walks @p data to extract the status line (version, status code, reason),
+/// headers (storing StringViews into @p header_storage), and body. Returns an
+/// error on malformed or truncated input.
+/// @param data            Pointer to raw response bytes.
+/// @param len             Length of the response data.
+/// @param header_storage  Buffer that backs the parsed Header StringViews;
+///                        must outlive the returned HttpResponse.
+/// @return Result containing a fully populated HttpResponse on success, or
+///         an Error describing the parse failure.
 Result<HttpResponse> HttpResponse::parse(const char* data, size_t len,
                                          Buffer& header_storage) {
   HttpResponse resp;

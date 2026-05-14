@@ -18,6 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/// @file xnet/http.h
+/// @brief HTTP protocol types — Method, Version, Header, HttpRequest,
+/// HttpResponse.
+
 #ifndef XNET_HTTP_H_
 #define XNET_HTTP_H_
 
@@ -31,7 +35,7 @@
 
 namespace xnet {
 
-// Method — HTTP 请求方法
+/// @brief HTTP request methods (GET, POST, PUT, DELETE, HEAD, PATCH).
 enum class Method : uint8_t {
   GET = 0,
   POST,
@@ -41,7 +45,10 @@ enum class Method : uint8_t {
   PATCH,
 };
 
-// 返回 m 对应的线缆格式（GET → "GET"）
+/// @brief Returns the wire-format string for the given method.
+/// @param m The HTTP method.
+/// @return C-string such as "GET", "POST", etc., or "UNKNOWN" for unrecognized
+/// values.
 constexpr inline const char* to_string(Method m) {
   switch (m) {
     case Method::GET:
@@ -61,14 +68,16 @@ constexpr inline const char* to_string(Method m) {
   }
 }
 
-// Version — HTTP 协议版本
+/// @brief HTTP protocol versions (HTTP/1.0, HTTP/1.1, HTTP/2.0).
 enum class Version : uint8_t {
   HTTP_1_0 = 0,
   HTTP_1_1,
   HTTP_2_0,
 };
 
-// 返回 v 对应的线缆格式（HTTP_1_1 → "HTTP/1.1"）
+/// @brief Returns the wire-format string for the given HTTP version.
+/// @param v The HTTP version.
+/// @return C-string such as "HTTP/1.1".
 constexpr inline const char* to_string(Version v) {
   switch (v) {
     case Version::HTTP_1_0:
@@ -82,53 +91,63 @@ constexpr inline const char* to_string(Version v) {
   }
 }
 
-// Header — 单个名称/值对。name 和 value 均为 StringView。
+/// @brief A single HTTP header name/value pair.
+/// Both @c name and @c value are non-owning StringViews pointing to memory
+/// managed by the caller.
 struct Header {
-  StringView name;
-  StringView value;
+  StringView name;   ///< Header field name (e.g. "Content-Type").
+  StringView value;  ///< Header field value (e.g. "text/html").
 };
 
-// HttpRequest — 待发送的 HTTP 请求。
-// 字段公开。调用者确保 |url| 及 Header name/value 引用的内存有效。
+/// @brief An HTTP request ready to be serialized to wire format.
+/// Fields are public. The caller must ensure that the memory backing @c url
+/// and each Header's name/value remains valid for the lifetime of this object.
 struct HttpRequest {
-  Method method;
-  StringView url;
-  Version version;
+  Method method;    ///< HTTP method (GET, POST, etc.).
+  StringView url;   ///< Request target URL (e.g. "/index.html").
+  Version version;  ///< HTTP protocol version.
 
-  // 可内联存储的最大头部数量。
+  /// Maximum number of headers that can be stored inline.
   static constexpr size_t kMaxHeaders = 64;
 
-  Header headers[kMaxHeaders];
-  size_t num_headers;
+  Header headers[kMaxHeaders];  ///< Array of header name/value pairs.
+  size_t num_headers;           ///< Number of headers currently populated.
 
-  // 请求体非拥有指针。可为 nullptr。
+  /// Non-owning pointer to the request body. May be @c nullptr.
   Buffer* body;
 
-  // 序列化为 HTTP/1.x 线缆格式写入 out：
-  //   METHOD /path HTTP/1.1\r\n
-  //   Header: value\r\n
-  //   \r\n
-  //   body...
+  /// @brief Serialize this request into @p out in HTTP/1.x wire format.
+  /// Output pattern:
+  ///   METHOD /path HTTP/1.1\r\n
+  ///   Header: value\r\n
+  ///   \r\n
+  ///   body...
+  /// @param out The buffer to write the serialized request into.
+  /// @return Status::OK on success, or an error status.
   Status serialize(Buffer& out) const;
 };
 
-// HttpResponse — 解析后的 HTTP 响应。
-// parse() 完成后，headers 中的 StringView 指向 header_storage buffer。
+/// @brief An HTTP response parsed from raw data.
+/// After parse() completes, the StringViews in @c headers point into the
+/// @p header_storage buffer passed to parse().
 struct HttpResponse {
-  Version version;
-  int status_code;
-  StringView reason;
+  Version version;    ///< HTTP protocol version.
+  int status_code;    ///< Numeric status code (e.g. 200, 404).
+  StringView reason;  ///< Reason phrase (e.g. "OK", "Not Found").
 
-  static constexpr size_t kMaxHeaders = 64;
+  static constexpr size_t kMaxHeaders = 64;  ///< Maximum inline headers.
 
-  Header headers[kMaxHeaders];
-  size_t num_headers;
+  Header headers[kMaxHeaders];  ///< Array of parsed header name/value pairs.
+  size_t num_headers;           ///< Number of headers parsed.
 
-  Buffer body;
+  Buffer body;  ///< Response body bytes.
 
-  // 从 data（len 字节）解析 HTTP 响应消息。
-  // header_storage 用作 Header StringView 的后备存储。
-  // 调用者确保 header_storage 生命周期超过本 HttpResponse。
+  /// @brief Parse an HTTP response message from @p data (@p len bytes).
+  /// @param data            Raw response bytes.
+  /// @param len             Number of bytes in @p data.
+  /// @param header_storage  Backing storage for Header StringViews; must
+  ///                        outlive this HttpResponse.
+  /// @return Result containing the parsed HttpResponse on success, or an Error.
   static Result<HttpResponse> parse(const char* data, size_t len,
                                     Buffer& header_storage);
 };
