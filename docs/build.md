@@ -1,14 +1,14 @@
-# XNet Build Guide
+# XNet 构建指南
 
-## 📋 Requirements
+## 📋 环境要求
 
-| Tool | Minimum Version |
-|:-----|:---------------:|
+| 工具 | 最低版本 |
+|:-----|:-------:|
 | CMake | 3.16 |
-| C++ Compiler | C++20 support (GCC 11+, Clang 14+, MSVC 2022+) |
-| clang-format | 14+ (optional, for linting) |
+| C++ 编译器 | 支持 C++20（GCC 11+、Clang 14+、MSVC 2022+） |
+| clang-format | 14+（可选，用于代码检查） |
 
-## 🔧 Standard Build
+## 🔧 标准构建
 
 ```bash
 # Configure
@@ -21,17 +21,17 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-## ⚙️ Build Options
+## ⚙️ 构建选项
 
-| Option | Default | Description |
-|:-------|:-------:|:------------|
-| `XNET_BUILD_TESTS` | `ON` | Build unit tests |
-| `XNET_BUILD_EXAMPLES` | `ON` | Build examples (`xnet_http_get`) |
-| `XNET_BUILD_LINT` | `OFF` | Enable clang-format lint targets |
-| `XNET_USE_EXCEPTIONS` | `OFF` | Enable C++ exceptions |
-| `XNET_USE_RTTI` | `OFF` | Enable RTTI |
+| 选项 | 默认值 | 说明 |
+|:-------|:-----:|:-----|
+| `XNET_BUILD_TESTS` | `ON` | 构建单元测试 |
+| `XNET_BUILD_EXAMPLES` | `ON` | 构建示例程序（`xnet_http_get`） |
+| `XNET_BUILD_LINT` | `OFF` | 启用 clang-format 代码检查目标 |
+| `XNET_USE_EXCEPTIONS` | `OFF` | 启用 C++ 异常 |
+| `XNET_USE_RTTI` | `OFF` | 启用 RTTI |
 
-### Local Development (all features)
+### 本地开发（全部功能）
 
 ```bash
 cmake -B build \
@@ -44,7 +44,7 @@ ctest --output-on-failure
 cmake --build build --target xnet_lint
 ```
 
-### Minimal Build (embedded target)
+### 最小化构建（嵌入式目标）
 
 ```bash
 cmake -B build \
@@ -54,19 +54,19 @@ cmake -B build \
     -DXNET_USE_RTTI=OFF
 ```
 
-## 🎯 Cross-Compilation
+## 🎯 交叉编译
 
 ### ESP32 (ESP-IDF)
 
-XNet works with ESP-IDF's CMake-based build system. Add as a component:
+XNet 可与 ESP-IDF 基于 CMake 的构建系统配合使用。添加为组件：
 
-**Option A: Component directory**
+**选项 A：组件目录**
 ```bash
 mkdir -p components/xnet
 cp -r include/ src/ ports/esp32/ CMakeLists.txt components/xnet/
 ```
 
-Configure the idf_component_register in your component CMakeLists.txt:
+在你的组件 CMakeLists.txt 中配置 idf_component_register：
 
 ```cmake
 idf_component_register(
@@ -77,16 +77,16 @@ idf_component_register(
 )
 ```
 
-**Option B: External project**
+**选项 B：外部项目**
 ```cmake
 # In your main project CMakeLists.txt
 add_subdirectory(xnet)
 target_link_libraries(${COMPONENT_LIB} INTERFACE xnet)
 ```
 
-### ARM / Generic Embedded
+### ARM / 通用嵌入式
 
-For any ARM target (Cortex-M, etc.):
+适用于任意 ARM 目标（Cortex-M 等）：
 
 ```bash
 cmake -B build \
@@ -96,7 +96,7 @@ cmake -B build \
     -DXNET_USE_RTTI=OFF
 ```
 
-## 🧪 Running Tests
+## 🧪 运行测试
 
 ```bash
 # Build and run all tests
@@ -110,17 +110,17 @@ ctest --test-dir build --output-on-failure
 ./build/test_url
 ```
 
-### Test Coverage
+### 测试覆盖率
 
-| Test File | Tests |
-|:----------|:------|
-| `test_buffer.cc` | 10 tests: construction, append, pop_front, reserve, resize, swap, find, clear, multiple appends |
-| `test_str_view.cc` | 10 tests: construction, comparison, starts_with, find, substr, to_int, empty |
-| `test_url.cc` | 9 tests: simple HTTP, HTTPS with port, query/fragment, user/password, relative path, IPv6, empty URL, encode/decode, default ports |
+| 测试文件 | 测试说明 |
+|:---------|:--------|
+| `test_buffer.cc` | 10 项测试：构造、追加、pop_front、reserve、resize、swap、查找、清空、多次追加 |
+| `test_str_view.cc` | 10 项测试：构造、比较、starts_with、查找、substr、to_int、空串 |
+| `test_url.cc` | 9 项测试：简单 HTTP、带端口的 HTTPS、查询/片段、用户名/密码、相对路径、IPv6、空 URL、编码/解码、默认端口 |
 
-## 🧼 Code Style
+## 🧼 代码风格
 
-XNet follows the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html).
+XNet 遵循 [Google C++ 代码风格指南](https://google.github.io/styleguide/cppguide.html)。
 
 ```bash
 # Check formatting
@@ -130,19 +130,19 @@ cmake --build build --target xnet_lint
 cmake --build build --target xnet_format
 ```
 
-The `.clang-format` file at the project root defines the exact style rules.
+项目根目录下的 `.clang-format` 文件定义了精确的风格规则。
 
 ## 🤖 CI/CD
 
-The project uses GitHub Actions with a `cmake-multi-platform.yml` workflow:
+该项目使用 GitHub Actions，工作流配置文件为 `cmake-multi-platform.yml`：
 
-- **Triggers:** Push to `master` / `dev`, PRs to `master` / `dev`
-- **Matrix:**
-  - Ubuntu (GCC, Clang)
-  - Windows (MSVC)
-- **Checks:**
-  - ✅ Compilation with all features enabled
-  - ✅ `ctest` — all tests pass
-  - ✅ `xnet_lint` — code style conformance
+- **触发条件：** 推送到 `master` / `dev` 分支，向 `master` / `dev` 发起 PR
+- **矩阵：**
+  - Ubuntu（GCC、Clang）
+  - Windows（MSVC）
+- **检查项：**
+  - ✅ 启用全部功能进行编译
+  - ✅ `ctest` — 所有测试通过
+  - ✅ `xnet_lint` — 代码风格合规
 
-Status badge: [![CI](https://github.com/lantubot/xnet/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/lantubot/xnet/actions/workflows/cmake-multi-platform.yml)
+状态徽章：[![CI](https://github.com/lantubot/xnet/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/lantubot/xnet/actions/workflows/cmake-multi-platform.yml)

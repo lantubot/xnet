@@ -1,19 +1,19 @@
-# XNet Usage Guide
+# XNet 使用指南
 
-## Table of Contents
+## 目录
 
-- [Basic HTTP GET](#basic-http-get)
-- [Builder Pattern](#builder-pattern)
-- [Working with Headers](#working-with-headers)
-- [Error Handling](#error-handling)
-- [URL Manipulation](#url-manipulation)
-- [Buffer Operations](#buffer-operations)
-- [StringView Operations](#stringview-operations)
-- [Working with Memory](#working-with-memory)
+- [基础 HTTP GET](#basic-http-get)
+- [构建器模式](#builder-pattern)
+- [处理请求头](#working-with-headers)
+- [错误处理](#error-handling)
+- [URL 操作](#url-manipulation)
+- [缓冲区操作](#buffer-operations)
+- [StringView 操作](#stringview-operations)
+- [内存管理](#working-with-memory)
 
 ---
 
-## Basic HTTP GET
+## 基础 HTTP GET
 
 ```cpp
 #include "xnet/xnet.h"
@@ -35,9 +35,9 @@ int main() {
 }
 ```
 
-## Builder Pattern
+## 构建器模式
 
-For full control over the request, use the `Request` builder:
+如需对请求进行完全控制，可使用 `Request` 构建器：
 
 ```cpp
 const char* json = R"({"hello": "xnet"})";
@@ -52,7 +52,7 @@ xnet::Result<xnet::Response> r = xnet::Request()
     .perform();
 ```
 
-The builder supports all common HTTP methods:
+构建器支持所有常见 HTTP 方法：
 
 ```cpp
 // PUT with body
@@ -67,9 +67,9 @@ xnet::Request().url("http://example.com/")
     .perform();
 ```
 
-## Working with Headers
+## 处理请求头
 
-**Setting request headers:**
+**设置请求头：**
 
 ```cpp
 xnet::Request req;
@@ -79,12 +79,12 @@ req.url("http://api.example.com/data")
    .header("Content-Type", "application/json");
 ```
 
-- Headers are copied internally — external strings can be temporary
-- Max 64 headers (`HttpRequest::kMaxHeaders`)
-- `Host` header is auto-added if not set
-- `Content-Length` is auto-computed if body is set
+- 请求头会在内部拷贝——外部字符串可以是临时变量
+- 最多支持 64 个请求头（`HttpRequest::kMaxHeaders`）
+- 如果未设置 `Host` 请求头，会自动添加
+- 如果设置了请求体，`Content-Length` 会自动计算
 
-**Reading response headers:**
+**读取响应头：**
 
 ```cpp
 xnet::Result<xnet::Response> r = xnet::get("http://httpbin.org/get");
@@ -104,9 +104,9 @@ if (r.is_ok()) {
 }
 ```
 
-## Error Handling
+## 错误处理
 
-XNet uses `Result<T>` for error handling — no exceptions.
+XNet 使用 `Result<T>` 进行错误处理——不使用异常。
 
 ```cpp
 xnet::Result<xnet::Response> r = xnet::Request()
@@ -138,9 +138,9 @@ if (r.is_ok()) {
 }
 ```
 
-## URL Manipulation
+## URL 操作
 
-**Parse a URL:**
+**解析 URL：**
 
 ```cpp
 const char* url_str = "https://user:secret@api.example.com:8443/search?q=hello&n=1#results";
@@ -159,7 +159,7 @@ if (r.is_ok()) {
 }
 ```
 
-**Percent encode/decode:**
+**百分比编码/解码：**
 
 ```cpp
 // Encode
@@ -174,9 +174,9 @@ xnet::Url::decode(xnet::StringView("hello%20world%21"), decoded, sizeof(decoded)
 // decoded == "hello world!"
 ```
 
-## Buffer Operations
+## 缓冲区操作
 
-`Buffer` is the primary byte container. It grows automatically on append.
+`Buffer` 是主要的字节容器，追加数据时会自动扩容。
 
 ```cpp
 xnet::Buffer buf;
@@ -203,9 +203,9 @@ buf.reserve(4096);
 buf.clear();
 ```
 
-## StringView Operations
+## StringView 操作
 
-`StringView` is used throughout the API to avoid string copies.
+`StringView` 在整个 API 中广泛使用，以避免字符串拷贝。
 
 ```cpp
 // Construction
@@ -227,13 +227,13 @@ xnet::StringView sub = sv2.substr(1, 3);  // "ell"
 int val = xnet::StringView("42").to_int();  // 42
 ```
 
-## Working with Memory
+## 内存管理
 
-XNet is designed for constrained environments. Key memory patterns:
+XNet 专为资源受限环境设计。关键内存模式如下：
 
-1. **No implicit allocations** — `StringView` never allocates
-2. **Explicit capacity** — `Buffer::reserve(N)` for predictable memory
-3. **Custom allocators** — Implement `Allocator` for pool/arena strategies:
+1. **无隐式分配**——`StringView` 从不分配内存
+2. **显式容量**——使用 `Buffer::reserve(N)` 实现可预测的内存管理
+3. **自定义分配器**——实现 `Allocator` 以使用池/区域分配策略：
 
 ```cpp
 class StaticPool : public xnet::Allocator {

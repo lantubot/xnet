@@ -1,110 +1,110 @@
-# Platform Notes
+# 平台说明
 
-## 🌐 Platform Overview
+## 🌐 平台概览
 
-| Platform | Socket Backend | DNS | Status |
+| 平台 | Socket 后端 | DNS | 状态 |
 |:---------|:---------------|:----|:------:|
-| Linux | POSIX sockets + `poll()` | `getaddrinfo()` | ✅ Production-ready |
-| Windows | WinSock2 + `select()` | `getaddrinfo()` | ✅ Production-ready |
-| ESP32 | LWIP BSD sockets | `gethostbyname()` | ✅ Verified on ESP-IDF |
+| Linux | POSIX sockets + `poll()` | `getaddrinfo()` | ✅ 生产就绪 |
+| Windows | WinSock2 + `select()` | `getaddrinfo()` | ✅ 生产就绪 |
+| ESP32 | LWIP BSD sockets | `gethostbyname()` | ✅ 已在 ESP-IDF 上验证 |
 
 ---
 
 ## 🐧 Linux
 
-### Implementation Details
+### 实现细节
 
-- **Non-blocking I/O** via `fcntl()` with `O_NONBLOCK`
-- **Connect timeout:** non-blocking `connect()` + `poll()` on `POLLOUT`
-- **Send/recv:** `poll()` with infinite timeout; `MSG_NOSIGNAL` to prevent `SIGPIPE`
-- **Thread safety:** Socket instances are not thread-safe; use one socket per thread
-- **DNS:** `getaddrinfo()` is blocking (standard POSIX behavior)
+- **非阻塞 I/O：** 通过 `fcntl()` 配合 `O_NONBLOCK` 实现
+- **连接超时：** 非阻塞 `connect()` + `poll()` 监视 `POLLOUT`
+- **发送/接收：** `poll()` 使用无限超时；`MSG_NOSIGNAL` 防止 `SIGPIPE`
+- **线程安全：** Socket 实例非线程安全；请在每个线程中使用独立的 socket
+- **DNS：** `getaddrinfo()` 是阻塞调用（标准 POSIX 行为）
 
-### Dependencies
+### 依赖项
 
-- `libc` (standard POSIX)
-- `libpthread` (linked automatically via CMake)
-- No external dependencies
+- `libc`（标准 POSIX）
+- `libpthread`（通过 CMake 自动链接）
+- 无外部依赖
 
-### Known Issues
+### 已知问题
 
-| Issue | Workaround |
+| 问题 | 解决方法 |
 |:------|:-----------|
-| `getaddrinfo()` blocks DNS resolution | Set shorter application-level timeouts |
-| No TLS/SSL support | Planned for future releases |
+| `getaddrinfo()` 阻塞 DNS 解析 | 设置较短的应用层超时 |
+| 不支持 TLS/SSL | 计划在后续版本中实现 |
 
 ---
 
 ## 🪟 Windows
 
-### Implementation Details
+### 实现细节
 
-- **WSA Startup:** `WSAStartup(2, 2)` called lazily on first socket creation (thread-safe via `InterlockedExchange`)
-- **Non-blocking I/O:** `ioctlsocket(FIONBIO)` before connect
-- **Connect timeout:** non-blocking `connect()` + `select()` on write/except file descriptor sets
-- **Send:** blocking loop with `WSAEWOULDBLOCK` retry
-- **Recv:** `select()` with 30-second timeout, then blocking `recv()`
-- **Shutdown:** `shutdown(SD_BOTH)` + `closesocket()`
+- **WSA 初始化：** 在首次创建 socket 时延迟调用 `WSAStartup(2, 2)`（通过 `InterlockedExchange` 保证线程安全）
+- **非阻塞 I/O：** 在 connect 前调用 `ioctlsocket(FIONBIO)`
+- **连接超时：** 非阻塞 `connect()` + `select()` 监视 write/except 文件描述符集
+- **发送：** 阻塞循环，遇到 `WSAEWOULDBLOCK` 时重试
+- **接收：** `select()` 使用 30 秒超时，然后执行阻塞 `recv()`
+- **关闭：** `shutdown(SD_BOTH)` + `closesocket()`
 
-### Dependencies
+### 依赖项
 
-- `ws2_32.lib` (linked automatically via CMake)
-- `getaddrinfo()` from `ws2tcpip.h`
+- `ws2_32.lib`（通过 CMake 自动链接）
+- 来自 `ws2tcpip.h` 的 `getaddrinfo()`
 
-### Known Issues
+### 已知问题
 
-| Issue | Workaround |
+| 问题 | 解决方法 |
 |:------|:-----------|
-| `select()` only handles up to `FD_SETSIZE` sockets | Fine for client-side usage |
-| No `MSG_NOSIGNAL` equivalent | Errors handled via `WSAECONNRESET` |
-| Winsock must be initialized per process | Auto-initialized on first `SocketFactory::create()` |
+| `select()` 最多只能处理 `FD_SETSIZE` 个 socket | 客户端场景下可正常使用 |
+| 无 `MSG_NOSIGNAL` 等效机制 | 通过 `WSAECONNRESET` 处理错误 |
+| Winsock 必须按进程初始化 | 在首次调用 `SocketFactory::create()` 时自动初始化 |
 
 ---
 
 ## 📡 ESP32 (ESP-IDF)
 
-### Implementation Details
+### 实现细节
 
-- **Socket creation:** Standard `socket(AF_INET, SOCK_STREAM, 0)` via LWIP
-- **Timeouts:** `setsockopt()` with `SO_RCVTIMEO` / `SO_SNDTIMEO`
-- **DNS:** `gethostbyname()` (LWIP built-in resolver)
-- **Logging:** ESP-IDF logging system via `ESP_LOGD` / `ESP_LOGE` / `ESP_LOGW`
-- **Memory:** Uses `new (std::nothrow)` — nullptr check on allocation failure
-- **Error mapping:** `errno` → `xnet::Status` with ESP-IDF specific patterns
+- **Socket 创建：** 通过 LWIP 调用标准 `socket(AF_INET, SOCK_STREAM, 0)`
+- **超时设置：** 使用 `setsockopt()` 配合 `SO_RCVTIMEO` / `SO_SNDTIMEO`
+- **DNS：** `gethostbyname()`（LWIP 内置解析器）
+- **日志：** 通过 `ESP_LOGD` / `ESP_LOGE` / `ESP_LOGW` 使用 ESP-IDF 日志系统
+- **内存：** 使用 `new (std::nothrow)` — 在分配失败时进行 nullptr 检查
+- **错误映射：** 将 `errno` 映射为 `xnet::Status`，包含 ESP-IDF 特定的错误模式
 
-### ESP-IDF Configuration
+### ESP-IDF 配置
 
-Required `sdkconfig` settings:
+所需的 `sdkconfig` 设置：
 
 ```
 CONFIG_LWIP_SO_RCVTIMEO=y
 CONFIG_LWIP_SO_SNDTIMEO=y
 ```
 
-### Memory Considerations
+### 内存注意事项
 
-- **62-bit types avoided** — all internal types are `uint32_t`/`int32_t`
-- **No STL** — no `std::string`, `std::vector` heap fragmentation
-- **No exceptions** — `XNET_USE_EXCEPTIONS=OFF` saves ~20KB flash
-- **No RTTI** — `XNET_USE_RTTI=OFF` saves typeinfo overhead
-- **Buffer growth:** starts small, doubles on expansion — use `reserve()` for predictable allocation
+- **避免使用 64 位类型** — 所有内部类型均为 `uint32_t` / `int32_t`
+- **无 STL** — 避免 `std::string`、`std::vector` 造成堆碎片
+- **无异常** — `XNET_USE_EXCEPTIONS=OFF` 可节省约 20KB Flash
+- **无 RTTI** — `XNET_USE_RTTI=OFF` 可节省类型信息开销
+- **缓冲区增长策略：** 从小容量开始，扩容时翻倍 — 使用 `reserve()` 可进行可预测的内存分配
 
-### Typical Flash/RAM Usage
+### 典型 Flash/RAM 占用
 
-| Component | Approx. Flash | Approx. RAM |
+| 组件 | 约计 Flash | 约计 RAM |
 |:----------|:-------------:|:-----------:|
-| XNet library (all modules) | ~15 KB | ~0.5 KB (BSS) |
-| Per `Buffer` (empty) | — | 24 bytes |
-| Per socket instance | — | ~8 bytes |
-| Request/Response (peak) | — | ~4 KB + body |
+| XNet 库（全部模块） | ~15 KB | ~0.5 KB (BSS) |
+| 每个 `Buffer`（空） | — | 24 字节 |
+| 每个 socket 实例 | — | ~8 字节 |
+| Request/Response（峰值） | — | ~4 KB + 请求体 |
 
-> Note: Measurements with ESP32 GCC `-Os`, `-fno-exceptions`, `-fno-rtti`.
+> 备注：使用 ESP32 GCC 编译选项 `-Os`、`-fno-exceptions`、`-fno-rtti` 测得。
 
 ---
 
-## 🔄 Platform Selection
+## 🔄 平台选择
 
-Platform is auto-detected at CMake configure time:
+平台在 CMake 配置阶段自动检测：
 
 ```cmake
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -116,14 +116,14 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Generic")  # ESP32
 endif()
 ```
 
-To override, set `CMAKE_SYSTEM_NAME` manually:
+如需手动覆盖，可设置 `CMAKE_SYSTEM_NAME`：
 
 ```bash
 cmake -B build -DCMAKE_SYSTEM_NAME=Generic
 ```
 
-## 🔜 Planned Platform Support
+## 🔜 计划支持的平台
 
-- **macOS** — FreeBSD-derived POSIX, very similar to Linux port
-- **ARM mbed OS** — Custom socket abstraction layer
-- **Zephyr RTOS** — BSD sockets via Zephyr networking stack
+- **macOS** — 基于 FreeBSD 的 POSIX 系统，与 Linux 端口非常相似
+- **ARM mbed OS** — 自定义 socket 抽象层
+- **Zephyr RTOS** — 通过 Zephyr 网络协议栈提供 BSD sockets
