@@ -194,6 +194,112 @@ XNET_TEST(Empty) {
   XNET_ASSERT(explicit_empty.empty() == true);
 }
 
+/** @brief 测试 ends_with() 方法：正常后缀、空后缀、nullptr、不匹配。 */
+XNET_TEST(EndsWith) {
+  xnet::StringView sv("hello world");
+  XNET_ASSERT(sv.ends_with("world") == true);
+  XNET_ASSERT(sv.ends_with("hello world") == true);
+  XNET_ASSERT(sv.ends_with("") == true);
+  XNET_ASSERT(sv.ends_with("hello") == false);
+  XNET_ASSERT(sv.ends_with("hello world!!!") == false);
+
+  xnet::StringView empty;
+  XNET_ASSERT(empty.ends_with("") == true);
+  XNET_ASSERT(empty.ends_with(nullptr) == true);
+  XNET_ASSERT(sv.ends_with(nullptr) == false);
+}
+
+/** @brief 测试 remove_prefix()：移除后再验证 size() / data() 正确。 */
+XNET_TEST(RemovePrefix) {
+  const char* text = "hello world";
+  xnet::StringView sv(text);
+
+  sv.remove_prefix(0);
+  XNET_ASSERT(sv.data() == text);
+  XNET_ASSERT(sv.size() == 11);
+
+  sv.remove_prefix(6);
+  XNET_ASSERT(sv.data() == text + 6);
+  XNET_ASSERT(sv.size() == 5);
+  XNET_ASSERT(sv == xnet::StringView("world"));
+
+  sv = xnet::StringView(text);
+  sv.remove_prefix(11);
+  XNET_ASSERT(sv.size() == 0);
+  XNET_ASSERT(sv.empty() == true);
+}
+
+/** @brief 测试 remove_suffix()：移除后再验证内容正确。 */
+XNET_TEST(RemoveSuffix) {
+  const char* text = "hello world";
+  xnet::StringView sv(text);
+
+  sv.remove_suffix(0);
+  XNET_ASSERT(sv == xnet::StringView("hello world"));
+
+  sv.remove_suffix(6);
+  XNET_ASSERT(sv.size() == 5);
+  XNET_ASSERT(sv.data() == text);
+  XNET_ASSERT(sv == xnet::StringView("hello"));
+
+  sv = xnet::StringView(text);
+  sv.remove_suffix(11);
+  XNET_ASSERT(sv.size() == 0);
+  XNET_ASSERT(sv.empty() == true);
+}
+
+/** @brief 测试 hash() 方法：空视图的 hash、相同内容的 hash 值相等、不同内容的
+ * hash 值不同。 */
+XNET_TEST(Hash) {
+  xnet::StringView empty;
+  xnet::StringView empty2(nullptr);
+  // 空视图的 hash 值应为 FNV-1a offset basis 值
+  XNET_ASSERT(empty.hash() == empty2.hash());
+
+  xnet::StringView a("hello");
+  xnet::StringView b("hello");
+  XNET_ASSERT(a.hash() == b.hash());
+
+  xnet::StringView c("world");
+  XNET_ASSERT(b.hash() != c.hash());
+
+  xnet::StringView d("hell");
+  XNET_ASSERT(a.hash() != d.hash());
+}
+
+/** @brief 验证 StringView 在 constexpr
+ * 上下文中可用（构造、比较、substr、find、starts_with）。 */
+XNET_TEST(Constexpr) {
+  // 构造
+  constexpr xnet::StringView sv("hello world");
+  constexpr xnet::StringView empty;
+
+  // 比较
+  constexpr xnet::StringView a("abc");
+  constexpr xnet::StringView b("abc");
+  constexpr bool eq = (a == b);
+  constexpr bool neq = (a != xnet::StringView("xyz"));
+  XNET_ASSERT(eq == true);
+  XNET_ASSERT(neq == true);
+
+  // substr
+  constexpr xnet::StringView sub = sv.substr(0, 5);
+  constexpr bool sub_eq = (sub == xnet::StringView("hello"));
+  XNET_ASSERT(sub_eq == true);
+
+  // find
+  constexpr size_t pos = sv.find("world");
+  constexpr size_t missing = sv.find("xyz");
+  XNET_ASSERT(pos == 6);
+  XNET_ASSERT(missing == xnet::StringView::npos);
+
+  // starts_with
+  constexpr bool sw1 = sv.starts_with("hello");
+  constexpr bool sw2 = sv.starts_with("world");
+  XNET_ASSERT(sw1 == true);
+  XNET_ASSERT(sw2 == false);
+}
+
 /** @brief Entry point — runs all StringView test cases. */
 int main() {
   XNET_RUN_TEST(DefaultConstruction);
@@ -206,6 +312,11 @@ int main() {
   XNET_RUN_TEST(Substr);
   XNET_RUN_TEST(ToInt);
   XNET_RUN_TEST(Empty);
+  XNET_RUN_TEST(EndsWith);
+  XNET_RUN_TEST(RemovePrefix);
+  XNET_RUN_TEST(RemoveSuffix);
+  XNET_RUN_TEST(Hash);
+  XNET_RUN_TEST(Constexpr);
 
   printf("All StringView tests passed.\n");
   return 0;

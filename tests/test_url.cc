@@ -293,6 +293,152 @@ XNET_TEST(DefaultPorts) {
   }
 }
 
+/** @brief 解析 opaque scheme URI（无 authority 形式），如 mailto: 和 tel:。 */
+XNET_TEST(ParseOpaqueScheme) {
+  {
+    const char* input = "mailto:user@example.com";
+    auto result = Url::parse(input, std::strlen(input));
+    XNET_ASSERT(result.is_ok());
+    const Url& url = result.value();
+    XNET_ASSERT_SV_EQ(url.scheme, "mailto");
+    XNET_ASSERT_SV_EQ(url.path, "user@example.com");
+    XNET_ASSERT(url.host.empty());
+    XNET_ASSERT(url.query.empty());
+    XNET_ASSERT(url.fragment.empty());
+    XNET_ASSERT(url.port == 0);
+    XNET_ASSERT(url.username.empty());
+    XNET_ASSERT(url.password.empty());
+  }
+  {
+    const char* input = "tel:+1234567890";
+    auto result = Url::parse(input, std::strlen(input));
+    XNET_ASSERT(result.is_ok());
+    const Url& url = result.value();
+    XNET_ASSERT_SV_EQ(url.scheme, "tel");
+    XNET_ASSERT_SV_EQ(url.path, "+1234567890");
+    XNET_ASSERT(url.host.empty());
+    XNET_ASSERT(url.query.empty());
+    XNET_ASSERT(url.fragment.empty());
+    XNET_ASSERT(url.port == 0);
+    XNET_ASSERT(url.username.empty());
+    XNET_ASSERT(url.password.empty());
+  }
+}
+
+/** @brief 解析仅包含 fragment 的 URI（#section-2），验证其他组件均为空。 */
+XNET_TEST(ParseFragmentOnly) {
+  const char* input = "#section-2";
+  auto result = Url::parse(input, std::strlen(input));
+  XNET_ASSERT(result.is_ok());
+  const Url& url = result.value();
+  XNET_ASSERT(url.scheme.empty());
+  XNET_ASSERT(url.host.empty());
+  XNET_ASSERT(url.path.empty());
+  XNET_ASSERT(url.query.empty());
+  XNET_ASSERT_SV_EQ(url.fragment, "section-2");
+  XNET_ASSERT(url.port == 0);
+  XNET_ASSERT(url.username.empty());
+  XNET_ASSERT(url.password.empty());
+}
+
+/** @brief 解析仅包含 query 的 URI（?q=hello），验证其他组件均为空。 */
+XNET_TEST(ParseQueryOnly) {
+  const char* input = "?q=hello";
+  auto result = Url::parse(input, std::strlen(input));
+  XNET_ASSERT(result.is_ok());
+  const Url& url = result.value();
+  XNET_ASSERT(url.scheme.empty());
+  XNET_ASSERT(url.host.empty());
+  XNET_ASSERT(url.path.empty());
+  XNET_ASSERT_SV_EQ(url.query, "q=hello");
+  XNET_ASSERT(url.fragment.empty());
+  XNET_ASSERT(url.port == 0);
+  XNET_ASSERT(url.username.empty());
+  XNET_ASSERT(url.password.empty());
+}
+
+/** @brief 解析无 scheme 但以 //
+ * 开头的输入（//example.com/path），解析器将其视为路径，验证 path 正确且 host
+ * 为空。 */
+XNET_TEST(ParseNoSchemeRelativeUrl) {
+  const char* input = "//example.com/path";
+  auto result = Url::parse(input, std::strlen(input));
+  XNET_ASSERT(result.is_ok());
+  const Url& url = result.value();
+  XNET_ASSERT(url.scheme.empty());
+  XNET_ASSERT(url.host.empty());
+  XNET_ASSERT_SV_EQ(url.path, "//example.com/path");
+  XNET_ASSERT(url.query.empty());
+  XNET_ASSERT(url.fragment.empty());
+  XNET_ASSERT(url.port == 0);
+  XNET_ASSERT(url.username.empty());
+  XNET_ASSERT(url.password.empty());
+}
+
+/** @brief 解码纯 ASCII 字符串，不需要解码转义，验证原样输出。 */
+XNET_TEST(DecodeNoEscapeNeeded) {
+  const char* input = "hello123ABC-._~";
+  size_t len = std::strlen(input);
+  char output[64];
+  size_t written = 0;
+  bool ok =
+      Url::decode(StringView(input, len), output, sizeof(output), &written);
+  XNET_ASSERT(ok);
+  XNET_ASSERT(written == len);
+  XNET_ASSERT(std::strncmp(output, input, len) == 0);
+}
+
+/** @brief 解码包含多个 '+' 的字符串，验证均解码为空格。 */
+XNET_TEST(DecodePlusAsSpace) {
+  const char* input = "a+b+c+d+e+f";
+  size_t len = std::strlen(input);
+  char output[64];
+  size_t written = 0;
+  bool ok =
+      Url::decode(StringView(input, len), output, sizeof(output), &written);
+  XNET_ASSERT(ok);
+  XNET_ASSERT(written == 11);
+  XNET_ASSERT(std::strncmp(output, "a b c d e f", 11) == 0);
+}
+
+/** @brief 编码时输出缓冲区太小，验证返回 false。 */
+XNET_TEST(EncodeSmallBuffer) {
+  const char* input = "hello world";
+  char output[1];
+  bool ok = Url::encode(StringView(input, std::strlen(input)), output,
+                        sizeof(output), nullptr);
+  XNET_ASSERT(!ok);
+}
+
+/** @brief 解码无效的 %XX 序列（%GG、%1、%XY 等），验证返回 false。 */
+XNET_TEST(DecodeInvalidHex) {
+  char output[64];
+  {
+    bool ok =
+        Url::decode(StringView("%GG", 3), output, sizeof(output), nullptr);
+    XNET_ASSERT(!ok);
+  }
+  {
+    bool ok = Url::decode(StringView("%1", 2), output, sizeof(output), nullptr);
+    XNET_ASSERT(!ok);
+  }
+  {
+    bool ok =
+        Url::decode(StringView("%XY", 3), output, sizeof(output), nullptr);
+    XNET_ASSERT(!ok);
+  }
+  {
+    bool ok =
+        Url::decode(StringView("%g1", 3), output, sizeof(output), nullptr);
+    XNET_ASSERT(!ok);
+  }
+  {
+    bool ok =
+        Url::decode(StringView("%0z", 3), output, sizeof(output), nullptr);
+    XNET_ASSERT(!ok);
+  }
+}
+
 /** @brief Test runner entry point. Executes all URL unit tests and prints a
  *        summary message.
  */
@@ -306,6 +452,14 @@ int main() {
   XNET_RUN_TEST(ParseEmptyUrlFails);
   XNET_RUN_TEST(EncodeDecodeRoundtrip);
   XNET_RUN_TEST(DefaultPorts);
+  XNET_RUN_TEST(ParseOpaqueScheme);
+  XNET_RUN_TEST(ParseFragmentOnly);
+  XNET_RUN_TEST(ParseQueryOnly);
+  XNET_RUN_TEST(ParseNoSchemeRelativeUrl);
+  XNET_RUN_TEST(DecodeNoEscapeNeeded);
+  XNET_RUN_TEST(DecodePlusAsSpace);
+  XNET_RUN_TEST(EncodeSmallBuffer);
+  XNET_RUN_TEST(DecodeInvalidHex);
 
   printf("All URL tests completed.\n");
   return 0;

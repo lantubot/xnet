@@ -19,6 +19,7 @@
 // SOFTWARE.
 
 #include <cstring>
+#include <utility>
 
 #include "test_helpers.h"
 #include "xnet/buffer.h"
@@ -231,6 +232,122 @@ XNET_TEST(MultipleAppends) {
   XNET_ASSERT(buf.data()[11] == 'F');
 }
 
+/** @brief 创建 Buffer 并 append 数据，clone() 后验证深度拷贝且修改不影响原
+ * Buffer。
+ */
+XNET_TEST(CloneBuffer) {
+  Buffer buf;
+  buf.append("Hello, Buffer!", 14);
+  XNET_ASSERT(buf.size() == 14);
+
+  Buffer cloned = buf.clone();
+  XNET_ASSERT(cloned.size() == 14);
+  XNET_ASSERT(cloned.data() != buf.data());
+  XNET_ASSERT(std::memcmp(cloned.data(), buf.data(), 14) == 0);
+
+  buf.append(" Modified", 9);
+  XNET_ASSERT(buf.size() == 23);
+  XNET_ASSERT(cloned.size() == 14);
+  XNET_ASSERT(std::memcmp(cloned.data(), "Hello, Buffer!", 14) == 0);
+  XNET_ASSERT(std::memcmp(buf.data(), "Hello, Buffer! Modified", 23) == 0);
+}
+
+/** @brief 移动构造后原 Buffer 为空，新 Buffer 持有数据；移动赋值同理。
+ */
+XNET_TEST(MoveSemantics) {
+  // 移动构造
+  Buffer buf_a;
+  buf_a.append("Move me!", 8);
+  XNET_ASSERT(buf_a.size() == 8);
+  XNET_ASSERT(buf_a.data() != nullptr);
+
+  Buffer buf_b(std::move(buf_a));
+  XNET_ASSERT(buf_b.size() == 8);
+  XNET_ASSERT(std::memcmp(buf_b.data(), "Move me!", 8) == 0);
+  XNET_ASSERT(buf_a.size() == 0);
+  XNET_ASSERT(buf_a.data() == nullptr);
+  XNET_ASSERT(buf_a.empty() == true);
+
+  // 移动赋值
+  Buffer buf_c;
+  buf_c.append("Destination", 11);
+  Buffer buf_d;
+  buf_d.append("Source", 6);
+
+  buf_c = std::move(buf_d);
+  XNET_ASSERT(buf_c.size() == 6);
+  XNET_ASSERT(std::memcmp(buf_c.data(), "Source", 6) == 0);
+  XNET_ASSERT(buf_d.size() == 0);
+  XNET_ASSERT(buf_d.data() == nullptr);
+  XNET_ASSERT(buf_d.empty() == true);
+
+  // 移动赋值（接收一个空 Buffer）
+  Buffer buf_e;
+  buf_c = std::move(buf_e);
+  XNET_ASSERT(buf_c.size() == 0);
+  XNET_ASSERT(buf_c.data() == nullptr);
+  XNET_ASSERT(buf_c.empty() == true);
+}
+
+/** @brief 创建一个 MallocAllocator，传入 Buffer 构造，append
+ * 数据后验证正常工作。
+ */
+XNET_TEST(CustomAllocator) {
+  MallocAllocator alloc;
+  Buffer buf(&alloc);
+  XNET_ASSERT(buf.data() == nullptr);
+  XNET_ASSERT(buf.size() == 0);
+  XNET_ASSERT(buf.empty() == true);
+
+  buf.append("Custom allocator test", 21);
+  XNET_ASSERT(buf.size() == 21);
+  XNET_ASSERT(buf.data() != nullptr);
+  XNET_ASSERT(std::memcmp(buf.data(), "Custom allocator test", 21) == 0);
+
+  buf.append('!');
+  XNET_ASSERT(buf.size() == 22);
+  XNET_ASSERT(buf.data()[21] == '!');
+
+  buf.clear();
+  XNET_ASSERT(buf.size() == 0);
+  XNET_ASSERT(buf.empty() == true);
+
+  buf.append("Reuse after clear", 18);
+  XNET_ASSERT(buf.size() == 18);
+  XNET_ASSERT(std::memcmp(buf.data(), "Reuse after clear", 18) == 0);
+}
+
+/** @brief 用新的 find(char) 方法查找单个字符，包括存在、不存在、空 buffer。
+ */
+XNET_TEST(FindChar) {
+  Buffer buf;
+  const char data[] = "The quick brown fox jumps over the lazy dog.";
+  buf.append(data, std::strlen(data));
+
+  // 字符存在
+  XNET_ASSERT(buf.find('T') == 0);
+  XNET_ASSERT(buf.find('q') == 4);
+  XNET_ASSERT(buf.find('e') == 2);
+  XNET_ASSERT(buf.find('x') == 18);
+  XNET_ASSERT(buf.find('g') == 42);
+  XNET_ASSERT(buf.find('.') == 43);
+
+  // 字符不存在
+  XNET_ASSERT(buf.find('Z') == Buffer::npos);
+  XNET_ASSERT(buf.find('1') == Buffer::npos);
+
+  // 空 buffer 查找
+  Buffer empty_buf;
+  XNET_ASSERT(empty_buf.find('a') == Buffer::npos);
+  XNET_ASSERT(empty_buf.find('\0') == Buffer::npos);
+
+  // 单字符 buffer
+  Buffer single;
+  single.append("X", 1);
+  XNET_ASSERT(single.find('X') == 0);
+  XNET_ASSERT(single.find('x') == Buffer::npos);
+}
+
 /** @brief Test runner entry point. Executes all XNET_TEST cases defined in this
  *        file and prints a summary message upon completion.
  */
@@ -245,6 +362,10 @@ int main() {
   XNET_RUN_TEST(FindSubstring);
   XNET_RUN_TEST(ClearResetsToEmpty);
   XNET_RUN_TEST(MultipleAppends);
+  XNET_RUN_TEST(CloneBuffer);
+  XNET_RUN_TEST(MoveSemantics);
+  XNET_RUN_TEST(CustomAllocator);
+  XNET_RUN_TEST(FindChar);
 
   printf("All tests completed.\n");
   return 0;

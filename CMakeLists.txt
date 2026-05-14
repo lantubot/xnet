@@ -118,6 +118,18 @@ if(XNET_BUILD_TESTS)
     target_include_directories(test_url PRIVATE include tests)
     target_link_libraries(test_url PRIVATE xnet)
     add_test(NAME test_url COMMAND test_url)
+
+    # 测试用例：错误处理（Error/Result/Status）
+    add_executable(test_error tests/test_error.cc)
+    target_include_directories(test_error PRIVATE include tests)
+    target_link_libraries(test_error PRIVATE xnet)
+    add_test(NAME test_error COMMAND test_error)
+
+    # 测试用例：HTTP 序列化与解析
+    add_executable(test_http tests/test_http.cc)
+    target_include_directories(test_http PRIVATE include tests)
+    target_link_libraries(test_http PRIVATE xnet)
+    add_test(NAME test_http COMMAND test_http)
 endif()
 
 # ── Lint (clang-format) ──────────────────────────────────────────────
