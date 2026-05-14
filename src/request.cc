@@ -1,17 +1,33 @@
+/// @file src/request.cc
+/// @brief Implementation of the HTTP Request builder — URL parsing, socket
+///        I/O, request serialization, and response parsing.
+///
+/// Implements the full lifecycle of a single HTTP request:
+///   1. URL parsing (via Url::parse)
+///   2. Socket creation and TCP connect
+///   3. HTTP request serialization (via HttpRequest::serialize)
+///   4. Socket send with retry loop
+///   5. Socket receive with chunked buffering
+///   6. HTTP response parsing (via HttpResponse::parse)
+///   7. Populating the Response result
+
 #include "xnet/request.h"
 
 namespace xnet {
 
 Result<Response> Request::perform() {
+  // ---- Step 1: Validate that a URL has been set ---------------------------
   if (url_.empty())
     return Result<Response>::err(
         Error(Status::INVALID_ARGUMENT, "request URL is not set"));
 
+  // ---- Step 2: Parse the URL (scheme, host, port, path, query) ------------
   Result<Url> url_result = Url::parse(url_.data(), url_.size() - 1);
   if (url_result.is_err()) return Result<Response>::err(url_result.error());
 
   const Url& target = url_result.value();
 
+  // ---- Step 3: Resolve host and path from parsed URL ----------------------
   if (target.host.empty())
     return Result<Response>::err(
         Error(Status::INVALID_ARGUMENT, "URL has no host"));
@@ -36,17 +52,20 @@ Result<Response> Request::perform() {
   }
   path_.append('\0');
 
+  // ---- Step 4: Create a TCP socket ----------------------------------------
   Result<Socket*> socket_result = SocketFactory::create(host_.data(), port);
   if (socket_result.is_err())
     return Result<Response>::err(socket_result.error());
   Socket* sock = socket_result.value();
 
+  // ---- Step 5: Connect to remote host -------------------------------------
   Status connect_status = sock->connect(host_.data(), port, timeout_ms_);
   if (connect_status != Status::OK) {
     SocketFactory::destroy(sock);
     return Result<Response>::err(Error(connect_status, "failed to connect"));
   }
 
+  // ---- Step 6: Build and serialize the HTTP request -----------------------
   HttpRequest req;
   req.method = method_;
   req.url = StringView(path_.data(), path_.size() - 1);
@@ -87,6 +106,7 @@ Result<Response> Request::perform() {
     return Result<Response>::err(Error(ser_status, "failed to serialize"));
   }
 
+  // ---- Step 7: Send the serialized request over the socket -----------------
   Result<size_t> send_result =
       sock->send(wire_buffer.data(), wire_buffer.size());
   if (send_result.is_err()) {
@@ -105,6 +125,7 @@ Result<Response> Request::perform() {
     total_sent += send_result.value();
   }
 
+  // ---- Step 8: Receive the full response from the socket -------------------
   Buffer recv_buf;
   const size_t kRecvChunkSize = 4096;
   char chunk[kRecvChunkSize];
@@ -122,6 +143,7 @@ Result<Response> Request::perform() {
   sock->close();
   SocketFactory::destroy(sock);
 
+  // ---- Step 9: Parse the HTTP response and populate Response struct --------
   Buffer header_storage;
   Result<HttpResponse> parse_result =
       HttpResponse::parse(recv_buf.data(), recv_buf.size(), header_storage);
@@ -142,6 +164,10 @@ Result<Response> Request::perform() {
   return Result<Response>::ok(static_cast<Response&&>(resp));
 }
 
+/// @brief Checks whether a header with the given name has already been set
+///        on this request (case-insensitive ASCII comparison).
+/// @param name  Null-terminated header name to look up.
+/// @return true if a matching header exists.
 bool Request::HasHeader(const char* name) const {
   if (name == nullptr) return false;
   size_t name_len = std::strlen(name);

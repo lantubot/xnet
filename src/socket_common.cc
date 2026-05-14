@@ -18,10 +18,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/// @file socket_common.cc
+/// @brief SocketFactory::destroy() 的平台无关实现。
+///
+/// 提供跨平台统一的 Socket 销毁逻辑。
+
 #include "xnet/socket.h"
 
 namespace xnet {
 
+/// 销毁由 SocketFactory::create() 创建的套接字。
+///
+/// 内部自动调用 close() 后再 delete。传入 nullptr 时直接返回（幂等）。
+/// @param s 要销毁的 Socket 指针，可为 nullptr。
 void SocketFactory::destroy(Socket* s) {
   if (s == nullptr) return;
   XNET_UNUSED(s->close());
