@@ -128,7 +128,7 @@ if(XNET_BUILD_LINT)
               clang-format-15 clang-format-14 clang-format
     )
     if(NOT CLANG_FORMAT)
-        message(WARNING "clang-format not found — xnet_lint / xnet_format targets disabled.
+        message(WARNING "clang-format not found — xnet_lint target disabled.
             Install it via: sudo apt install clang-format-18 (Linux)
             or: choco install llvm (Windows)")
     else()
@@ -151,14 +151,6 @@ if(XNET_BUILD_LINT)
             COMMAND ${CMAKE_COMMAND} -E echo "PASS"
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
             COMMENT "检查代码格式是否符合 Google C++ 规范"
-        )
-
-        # xnet_format — 自动修复代码格式
-        add_custom_target(xnet_format
-            COMMAND ${CLANG_FORMAT} -i -style=file ${XNET_LINT_SOURCES}
-            COMMAND ${CMAKE_COMMAND} -E echo "格式化完成!"
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-            COMMENT "自动修复代码格式为 Google C++ 规范"
         )
     endif()
 endif()
