@@ -1,9 +1,13 @@
-// XNet 示例：HTTP GET 请求
+/// @file http_get.cc
+/// @brief HTTP GET/POST 请求使用示例
 
 #include <cstdio>
 
 #include "xnet/xnet.h"
 
+/// @brief 打印 HTTP 响应结果
+/// @param result 请求结果（包含 Response 或错误信息）
+/// @param label  请求标识标签
 static void print_response(const xnet::Result<xnet::Response>& result,
                            const char* label) {
   printf("=== %s ===\n", label);
@@ -20,11 +24,11 @@ static void print_response(const xnet::Result<xnet::Response>& result,
 }
 
 int main() {
-  // --- 简单 GET ---
+  /// @brief 简单 GET 请求示例
   xnet::Result<xnet::Response> result = xnet::get("http://httpbin.org/get");
   print_response(result, "Simple GET");
 
-  // --- 配置 POST ---
+  /// @brief 配置 POST 请求示例（自定义 URL、方法、头部、请求体、超时）
   xnet::Request req;
   const char* json = R"({"hello": "xnet"})";
 

@@ -25,6 +25,8 @@
 
 using namespace xnet;
 
+/// @brief Verifies that a default-constructed Buffer has null data, zero size,
+///        zero capacity, and is marked as empty.
 XNET_TEST(DefaultConstruction) {
   Buffer buf;
   XNET_ASSERT(buf.data() == nullptr);
@@ -33,6 +35,9 @@ XNET_TEST(DefaultConstruction) {
   XNET_ASSERT(buf.empty() == true);
 }
 
+/// @brief Tests appending byte arrays to a Buffer and verifies that the
+///        written data matches the expected content after single and
+///        sequential appends.
 XNET_TEST(AppendBytes) {
   Buffer buf;
   const char hello[] = "Hello, Buffer!";
@@ -48,6 +53,8 @@ XNET_TEST(AppendBytes) {
   XNET_ASSERT(std::memcmp(buf.data(), "Hello, Buffer! More data.", 24) == 0);
 }
 
+/// @brief Tests appending individual characters to a Buffer and validates
+///        that size increases and stored characters are correct.
 XNET_TEST(AppendChar) {
   Buffer buf;
   buf.append('a');
@@ -61,6 +68,9 @@ XNET_TEST(AppendChar) {
   XNET_ASSERT(buf.data()[2] == 'c');
 }
 
+/// @brief Tests removing elements from the front of a Buffer via pop_front(),
+///        including zero removal, partial removal, full drain, and
+///        over-removal (beyond current size).
 XNET_TEST(PopFront) {
   Buffer buf;
   const char data[] = "ABCDEFGHIJ";
@@ -81,6 +91,9 @@ XNET_TEST(PopFront) {
   XNET_ASSERT(buf.size() == 0);
 }
 
+/// @brief Tests buffer capacity reservation via reserve(). Verifies that
+///        capacity grows monotonically, that shrinking requests are
+///        ignored, and that existing data survives reallocation.
 XNET_TEST(ReserveAndCapacity) {
   Buffer buf;
   XNET_ASSERT(buf.capacity() == 0);
@@ -101,6 +114,9 @@ XNET_TEST(ReserveAndCapacity) {
   XNET_ASSERT(std::memcmp(buf.data(), "hello", 5) == 0);
 }
 
+/// @brief Tests resizing a Buffer to larger and smaller sizes. Verifies that
+///        growth zero-initializes new elements and that shrinking
+///        correctly truncates and discards the tail.
 XNET_TEST(Resize) {
   Buffer buf;
 
@@ -122,6 +138,8 @@ XNET_TEST(Resize) {
   XNET_ASSERT(buf.data()[7] == 0);
 }
 
+/// @brief Tests swapping the contents of two Buffers via swap(), including
+///        swapping with an empty (default-constructed) Buffer.
 XNET_TEST(Swap) {
   Buffer buf_a;
   Buffer buf_b;
@@ -144,6 +162,10 @@ XNET_TEST(Swap) {
   XNET_ASSERT(std::memcmp(buf_c.data(), "BBBBBBB", 7) == 0);
 }
 
+/// @brief Tests substring search within a Buffer via find(). Covers
+///        matches at the beginning, middle, and end of the data, a
+///        non-existent substring, an empty query, and a query that
+///        exceeds the buffer length.
 XNET_TEST(FindSubstring) {
   Buffer buf;
   const char data[] = "The quick brown fox jumps over the lazy dog.";
@@ -159,6 +181,9 @@ XNET_TEST(FindSubstring) {
   XNET_ASSERT(buf.find("q", 1) == 4);
 }
 
+/// @brief Tests that clear() resets the Buffer to an empty state (size == 0,
+///        empty == true) while allowing subsequent append operations to
+///        work correctly.
 XNET_TEST(ClearResetsToEmpty) {
   Buffer buf;
   buf.append("Hello, world!", 13);
@@ -174,6 +199,9 @@ XNET_TEST(ClearResetsToEmpty) {
   XNET_ASSERT(std::memcmp(buf.data(), "New data", 8) == 0);
 }
 
+/// @brief Tests the correctness of multiple sequential appends using both
+///        append(const char*, size_t) and append(char) overloads,
+///        verifying the accumulated size and element-wise content.
 XNET_TEST(MultipleAppends) {
   Buffer buf;
   buf.append("A", 1);
@@ -193,6 +221,8 @@ XNET_TEST(MultipleAppends) {
   XNET_ASSERT(buf.data()[11] == 'F');
 }
 
+/// @brief Test runner entry point. Executes all XNET_TEST cases defined in this
+///        file and prints a summary message upon completion.
 int main() {
   XNET_RUN_TEST(DefaultConstruction);
   XNET_RUN_TEST(AppendBytes);
